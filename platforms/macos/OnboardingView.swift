@@ -11,7 +11,7 @@ struct OnboardingView: View {
 
     // Đã restart sau khi cấp quyền?
     private var isPostRestart: Bool {
-        UserDefaults.standard.bool(forKey: "gonhanh.didRestart")
+        UserDefaults.standard.bool(forKey: SettingsKey.permissionGranted)
     }
 
     var body: some View {
@@ -118,28 +118,19 @@ struct OnboardingView: View {
     }
 
     private func restartApp() {
-        UserDefaults.standard.set(true, forKey: "gonhanh.didRestart")
         UserDefaults.standard.set(selectedMode.rawValue, forKey: SettingsKey.method)
-
+        UserDefaults.standard.set(true, forKey: SettingsKey.permissionGranted)
         let path = Bundle.main.bundlePath
-        // Đợi UserDefaults sync xong trước khi terminate
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            let task = Process()
-            task.launchPath = "/bin/sh"
-            task.arguments = ["-c", "sleep 0.3 && open \"\(path)\""]
-            try? task.run()
-            NSApp.terminate(nil)
-        }
+        let task = Process()
+        task.launchPath = "/bin/sh"
+        task.arguments = ["-c", "sleep 0.5 && open \"\(path)\""]
+        try? task.run()
+        NSApp.terminate(nil)
     }
 
     private func finish() {
         UserDefaults.standard.set(selectedMode.rawValue, forKey: SettingsKey.method)
         UserDefaults.standard.set(true, forKey: SettingsKey.hasCompletedOnboarding)
-        UserDefaults.standard.removeObject(forKey: "gonhanh.didRestart")
-
-        // Chuyển sang accessory mode (ẩn dock icon)
-        NSApp.setActivationPolicy(.accessory)
-
         NotificationCenter.default.post(name: .onboardingCompleted, object: nil)
         NSApp.keyWindow?.close()
     }

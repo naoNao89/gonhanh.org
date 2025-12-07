@@ -15,12 +15,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var menuBar: MenuBarController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Chỉ ẩn dock icon nếu đã hoàn thành onboarding
-        let hasCompleted = UserDefaults.standard.bool(forKey: SettingsKey.hasCompletedOnboarding)
-        if hasCompleted {
-            NSApp.setActivationPolicy(.accessory)
-        }
-
+        NSApp.setActivationPolicy(.accessory)
         menuBar = MenuBarController()
     }
 
