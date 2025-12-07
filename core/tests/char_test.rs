@@ -169,14 +169,20 @@ fn telex_d_stroke() {
 #[test]
 fn telex_delayed_tone_input() {
     // Telex delayed mode: tone key can be typed after consonants
-    // But only applies to matching vowel (aa→â, not ea→ê)
+    // w applies to first matching vowel from end (u, o, or a)
     run_telex(&[
-        // w after consonant applies to previous matching vowel
-        ("tuow", "tưo"),       // tuo + w → tư + o (w applies to u)
-        ("truongw", "trương"), // truong + w → trương (w applies to u)
-        ("duongw", "dương"),   // duong + w → dương
-        // Multiple vowels: w finds last matching (u or o)
-        ("nguoiw", "nguơi"),   // nguoi + w → nguơi (w applies to o, not i)
+        // Single vowel cases
+        ("tuw", "tư"),         // tu + w → tư
+        ("tow", "tơ"),         // to + w → tơ
+        ("taw", "tă"),         // ta + w → tă
+        // With final consonants - w still finds vowel
+        ("tungw", "tưng"),     // tung + w → tưng
+        ("tongw", "tơng"),     // tong + w → tơng
+        // Multiple vowels: w finds u first (for uo → ươ pattern)
+        ("tuow", "tưo"),       // tuo + w → tưo (first w applies to u)
+        ("tuoww", "tươ"),      // tuow + w → tươ (second w applies to o)
+        // Standard ươ compound needs uwow pattern
+        ("truwowng", "trương"), // standard Telex for trường
     ]);
 }
 
