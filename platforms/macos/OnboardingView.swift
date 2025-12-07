@@ -149,6 +149,7 @@ struct OnboardingView: View {
 
     private func restartApp() {
         UserDefaults.standard.set(selectedMode.rawValue, forKey: SettingsKey.method)
+        UserDefaults.standard.set(true, forKey: SettingsKey.permissionGranted)
         let path = Bundle.main.bundlePath
         let task = Process()
         task.launchPath = "/bin/sh"
