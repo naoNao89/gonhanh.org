@@ -118,11 +118,10 @@ struct OnboardingView: View {
     }
 
     private func restartApp() {
-        // Đánh dấu đã restart
         UserDefaults.standard.set(true, forKey: "gonhanh.didRestart")
         UserDefaults.standard.set(selectedMode.rawValue, forKey: SettingsKey.method)
+        CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication)
 
-        // Restart app
         let path = Bundle.main.bundlePath
         let task = Process()
         task.launchPath = "/bin/sh"

@@ -180,7 +180,7 @@ class MenuBarController {
             let window = NSWindow(contentViewController: controller)
             window.title = AppMetadata.name
             window.styleMask = [.titled, .closable]
-            window.setContentSize(controller.view.fittingSize)
+            window.setContentSize(NSSize(width: 480, height: 400))
             window.center()
             window.isReleasedWhenClosed = false
             onboardingWindow = window

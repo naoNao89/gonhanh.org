@@ -83,13 +83,16 @@ Nếu cần chuyển mã hay dùng bảng mã cũ, dùng UniKey/EVKey/OpenKey.
 
 ### Tại sao chọn GoNhanh?
 
-| Vấn đề                                     |          Bộ gõ khác          |         GoNhanh          |
+| Vấn đề                                     |    Bộ gõ khác / Mặc định     |         GoNhanh          |
 | :----------------------------------------- | :--------------------------: | :----------------------: |
 | **Dính chữ Chrome/Edge** (`aa` → `aâ`)     | ⚠️ Tắt autocomplete thủ công |      ✅ Tự động fix      |
 | **Lặp chữ Google Docs** (`được` → `đđược`) |  ⚠️ Bật "Sửa lỗi" thủ công   |      ✅ Tự động fix      |
 | **Mất dấu Excel** (`trường` → `trương`)    |       ⚠️ Không ổn định       |      ✅ Tự động fix      |
 | **Nhảy chữ Terminal/CLI**                  |     ❌ Không hỗ trợ tốt      |    ✅ Smart detection    |
-| **Xung đột bộ gõ macOS**                   |      ⚠️ Config thủ công      |     ✅ Hook cấp thấp     |
+| **Hộp đen che chữ (macOS)**                |    ❌ Che mất nội dung gõ    |     ✅ Edit-in-place     |
+| **Gạch chân khó chịu (macOS)**             |       ❌ Luôn hiển thị       |    ✅ Không gạch chân    |
+| **Lỗi lặp chữ Discord (Windows)**          |     ❌ Thường xuyên gặp      |  ✅ Fix triệt để (plan)  |
+| **Xung đột phím tắt IDE**                  |     ⚠️ Cần map lại phím      |    ✅ Hook thông minh    |
 | **Chọn bảng mã**                           |  ⚠️ Nhiều lựa chọn gây rối   |   ✅ Mặc định Unicode    |
 | **Chọn kiểu gõ**                           |    ⚠️ Telex/VNI/VIQR/...     |    ✅ Telex hoặc VNI     |
 | **Cấu hình phức tạp**                      |       ⚠️ 10+ tùy chọn        |      ✅ Cài là dùng      |
