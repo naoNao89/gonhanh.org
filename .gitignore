@@ -38,5 +38,6 @@ obj/
 # Agent configs (not project-specific)
 .claude/
 .opencode/
-
 plans/
+CLAUDE.md
+
