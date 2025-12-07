@@ -313,20 +313,104 @@ private func keyboardCallback(
     return Unmanaged.passUnretained(event)
 }
 
+// MARK: - App Detection
+
+/// Check if current frontmost app is a terminal/CLI app
+private func isTerminalApp() -> Bool {
+    guard let frontApp = NSWorkspace.shared.frontmostApplication else {
+        return false
+    }
+
+    let bundleId = frontApp.bundleIdentifier ?? ""
+    let appName = frontApp.localizedName ?? ""
+
+    // List of known terminal apps
+    let terminalBundleIds = [
+        "com.apple.Terminal",
+        "com.googlecode.iterm2",
+        "io.alacritty",
+        "com.github.wez.wezterm",
+        "co.zeit.hyper",
+        "com.qvacua.VimR",
+        "org.vim.MacVim",
+        "com.microsoft.VSCode",      // VS Code integrated terminal
+        "com.jetbrains.",            // JetBrains IDEs
+    ]
+
+    let terminalAppNames = [
+        "Terminal",
+        "iTerm",
+        "Alacritty",
+        "WezTerm",
+        "Hyper",
+        "kitty",
+    ]
+
+    // Check bundle ID
+    for id in terminalBundleIds {
+        if bundleId.contains(id) {
+            return true
+        }
+    }
+
+    // Check app name
+    for name in terminalAppNames {
+        if appName.contains(name) {
+            return true
+        }
+    }
+
+    return false
+}
+
 // MARK: - Send Keys
 
-/// Atomic text replacement using selection + paste
-/// This fixes Chrome/Excel autocomplete issues where backspace+type causes "dính chữ"
+/// Smart text replacement - uses different methods based on app type
+/// - Terminal/CLI: Use backspace (selection doesn't work well)
+/// - Browser/Office: Use Shift+Left selection (fixes autocomplete issues)
 private func sendTextReplacement(backspaceCount: Int, chars: [Character], proxy: CGEventTapProxy) {
+    if isTerminalApp() {
+        // Terminal mode: use backspace
+        sendTextReplacementWithBackspace(backspaceCount: backspaceCount, chars: chars, proxy: proxy)
+    } else {
+        // GUI app mode: use selection for atomic replacement
+        sendTextReplacementWithSelection(backspaceCount: backspaceCount, chars: chars, proxy: proxy)
+    }
+}
+
+/// Terminal-friendly: backspace then type
+private func sendTextReplacementWithBackspace(backspaceCount: Int, chars: [Character], proxy: CGEventTapProxy) {
+    let source = CGEventSource(stateID: .privateState)
+
+    // Send backspaces
+    for _ in 0..<backspaceCount {
+        if let down = CGEvent(keyboardEventSource: source, virtualKey: 0x33, keyDown: true),
+           let up = CGEvent(keyboardEventSource: source, virtualKey: 0x33, keyDown: false) {
+            down.post(tap: .cgSessionEventTap)
+            up.post(tap: .cgSessionEventTap)
+        }
+    }
+
+    // Send new characters
+    let string = String(chars)
+    let utf16 = Array(string.utf16)
+
+    if let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
+       let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) {
+        down.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
+        up.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
+        down.post(tap: .cgSessionEventTap)
+        up.post(tap: .cgSessionEventTap)
+    }
+}
+
+/// GUI app-friendly: select then replace (atomic, fixes Chrome/Excel autocomplete)
+private func sendTextReplacementWithSelection(backspaceCount: Int, chars: [Character], proxy: CGEventTapProxy) {
     let source = CGEventSource(stateID: .privateState)
 
     if backspaceCount > 0 {
-        // Method 1: Select text with Shift+Left, then type to replace
-        // This is atomic and works with autocomplete
-
-        // Send Shift+Left Arrow (backspaceCount times) to select text
+        // Select text with Shift+Left Arrow
         for _ in 0..<backspaceCount {
-            // Left arrow keycode = 0x7B, with Shift modifier
             if let down = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: true),
                let up = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: false) {
                 down.flags = .maskShift
@@ -337,46 +421,16 @@ private func sendTextReplacement(backspaceCount: Int, chars: [Character], proxy:
         }
     }
 
-    // Now send the replacement characters (will replace selection or just insert)
+    // Send replacement characters (replaces selection)
     let string = String(chars)
     let utf16 = Array(string.utf16)
 
     if let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
        let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) {
-
         down.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
         up.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
-
         down.post(tap: .cgSessionEventTap)
         up.post(tap: .cgSessionEventTap)
     }
 }
 
-/// Legacy backspace method (kept for fallback)
-private func sendBackspace(proxy: CGEventTapProxy) {
-    let source = CGEventSource(stateID: .privateState)
-
-    if let down = CGEvent(keyboardEventSource: source, virtualKey: 0x33, keyDown: true),
-       let up = CGEvent(keyboardEventSource: source, virtualKey: 0x33, keyDown: false) {
-        down.post(tap: .cgSessionEventTap)
-        up.post(tap: .cgSessionEventTap)
-    }
-}
-
-/// Legacy character send method (kept for fallback)
-private func sendCharacters(_ chars: [Character], proxy: CGEventTapProxy) {
-    let source = CGEventSource(stateID: .privateState)
-
-    let string = String(chars)
-    let utf16 = Array(string.utf16)
-
-    if let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
-       let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) {
-
-        down.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
-        up.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
-
-        down.post(tap: .cgSessionEventTap)
-        up.post(tap: .cgSessionEventTap)
-    }
-}
