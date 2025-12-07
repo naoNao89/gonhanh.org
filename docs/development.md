@@ -14,7 +14,7 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/gonhanh.org
+git clone https://github.com/khaphanspace/gonhanh.org
 cd gonhanh.org
 
 # Run setup script

@@ -1,6 +1,6 @@
 # ⚡ GoNhanh
 
-[![CI](https://github.com/user/gonhanh/actions/workflows/ci.yml/badge.svg)](https://github.com/user/gonhanh/actions/workflows/ci.yml)
+[![CI](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg)](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
 Bộ gõ tiếng Việt hiệu suất cao, native cho macOS và Windows.
@@ -33,7 +33,7 @@ brew install gonhanh
 
 ```bash
 # Clone
-git clone https://github.com/user/gonhanh.org
+git clone https://github.com/khaphanspace/gonhanh.org
 cd gonhanh.org
 
 # Build
