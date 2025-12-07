@@ -21,7 +21,9 @@ GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Vi�
 
 Dự án lấy cảm hứng từ **EVKey** - hình mẫu về sự tối giản và hiệu quả.
 
-Xuất phát từ nhu cầu của một lập trình viên macOS cần sự ổn định tuyệt đối trên các công cụ hiện đại (như Claude Code, Terminal), GoNhanh ra đời để tiếp nối di sản đó khi các công cụ cũ dừng cập nhật. Chúng tôi cam kết xây dựng một sản phẩm **Mã nguồn mở - Miễn phí - Của cộng đồng**.
+Xuất phát từ nhu cầu cá nhân về sự ổn định tuyệt đối trên các công cụ hiện đại (như Claude Code, Terminal), tôi (**Kha Phan**) phát triển GoNhanh để tiếp nối di sản của những người đi trước.
+
+Đây là dự án **phi lợi nhuận**, được phát triển và duy trì bởi cá nhân tôi với cam kết: **Mã nguồn mở - Miễn phí - Của cộng đồng**.
 
 ## Ba Không
 
