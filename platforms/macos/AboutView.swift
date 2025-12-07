@@ -3,11 +3,11 @@ import SwiftUI
 struct AboutView: View {
     var body: some View {
         VStack(spacing: 0) {
-            content.frame(height: 300)
+            content.frame(height: 340)
             Divider()
             footer
         }
-        .frame(width: 400)
+        .frame(width: 480)
     }
 
     private var content: some View {
