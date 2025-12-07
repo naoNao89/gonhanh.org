@@ -1,4 +1,4 @@
-.PHONY: help all test lint build clean setup install release
+.PHONY: help all test check build clean setup install release
 
 # Auto-versioning
 TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
@@ -14,7 +14,7 @@ help: ## Show this help
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Development:"
-	@grep -E '^(test|lint|build|clean):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+	@grep -E '^(test|check|build|clean):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Setup & Install:"
 	@grep -E '^(setup|install):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -27,10 +27,10 @@ all: test build ## Run test + build
 test: ## Run tests
 	@cd core && cargo test
 
-lint: ## Format & lint
+check: ## Format & lint
 	@cd core && cargo fmt && cargo clippy -- -D warnings
 
-build: ## Build core + macos app
+build: check ## Build core + macos app
 	@./scripts/build-core.sh
 	@./scripts/build-macos.sh
 
