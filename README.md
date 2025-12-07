@@ -3,18 +3,18 @@
 [![CI](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg)](https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
-Bộ gõ tiếng Việt. Chỉ hỗ trợ Unicode.
+Bộ gõ tiếng Việt cho macOS. Viết bằng Rust + SwiftUI.
 
-## Tại sao làm thêm một bộ gõ nữa?
+## Về dự án
 
-UniKey, EVKey, OpenKey đều hoạt động tốt. Nhưng tôi muốn một bộ gõ:
+Một bộ gõ tiếng Việt đơn giản:
 
-- Chỉ dùng Unicode, bỏ hẳn TCVN3/VNI Windows/CP 1258
-- Không có chuyển mã, macro, spelling check
-- UI native cho từng platform (SwiftUI cho macOS, không phải Qt)
-- Engine viết bằng Rust, dễ maintain
+- Chỉ Unicode, không hỗ trợ bảng mã cũ (TCVN3, VNI Windows, CP 1258)
+- Chỉ gõ tiếng Việt, không chuyển mã, không macro
+- Engine dựa trên ngữ âm học, không phải bảng tra cứu
+- UI native (SwiftUI), không dùng Qt hay Electron
 
-Nên tôi tự viết.
+Nếu cần chuyển mã hoặc bảng mã cũ, dùng [UniKey](https://www.unikey.org/), [EVKey](https://evkeyvn.com/), hoặc [OpenKey](https://github.com/tuyenvm/OpenKey).
 
 ## Ba Không
 
