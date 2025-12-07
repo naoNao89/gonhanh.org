@@ -8,53 +8,86 @@ on:
 permissions:
   contents: write
 
-jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            name: gonhanh-macos-arm64
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            name: gonhanh-macos-x64
+env:
+  APP_NAME: GoNhanh
 
-    runs-on: ${{ matrix.os }}
+jobs:
+  build-macos:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core
 
-      - name: Build
-        run: cargo build --manifest-path core/Cargo.toml --release --target ${{ matrix.target }}
-
-      - name: Package
+      - name: Build Rust Core (Universal)
         run: |
-          mkdir -p dist
-          cp target/${{ matrix.target }}/release/libgonhanh_core.dylib dist/ 2>/dev/null || true
-          cp target/${{ matrix.target }}/release/libgonhanh_core.a dist/ 2>/dev/null || true
-          tar -czvf ${{ matrix.name }}.tar.gz -C dist .
+          cd core
+          cargo build --release --target aarch64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
 
-      - name: Upload
+          # Create universal binary
+          mkdir -p ../platforms/macos
+          lipo -create \
+            ../target/aarch64-apple-darwin/release/libgonhanh_core.a \
+            ../target/x86_64-apple-darwin/release/libgonhanh_core.a \
+            -output ../platforms/macos/libgonhanh_core.a
+
+      - name: Build macOS App
+        run: |
+          cd platforms/macos
+          xcodebuild -scheme GoNhanh \
+            -configuration Release \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package App
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          cd platforms/macos
+          APP_PATH="build/DerivedData/Build/Products/Release/GoNhanh.app"
+
+          # Update version in Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION#v}" "$APP_PATH/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION#v}" "$APP_PATH/Contents/Info.plist"
+
+          # Create DMG
+          mkdir -p dist
+          hdiutil create -volname "GoNhanh" \
+            -srcfolder "$APP_PATH" \
+            -ov -format UDZO \
+            "dist/GoNhanh-${VERSION}-macos.dmg"
+
+          # Also create zip
+          cd build/DerivedData/Build/Products/Release
+          zip -r "../../../../../dist/GoNhanh-${VERSION}-macos.zip" GoNhanh.app
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}
-          path: ${{ matrix.name }}.tar.gz
+          name: macos-app
+          path: platforms/macos/dist/*
 
   release:
-    needs: build
+    needs: build-macos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
-      - name: Release
+        with:
+          name: macos-app
+          path: dist
+
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            gonhanh-macos-arm64/gonhanh-macos-arm64.tar.gz
-            gonhanh-macos-x64/gonhanh-macos-x64.tar.gz
+          files: dist/*
           generate_release_notes: true
