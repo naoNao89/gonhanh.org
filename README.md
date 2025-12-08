@@ -165,4 +165,4 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 
 ## License
 
-[GPL-3.0-or-later](LICENSE)
+Copyright © 2025 GoNhanh Contributors. [GNU GPLv3](LICENSE).
