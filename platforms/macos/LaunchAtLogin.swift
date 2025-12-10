@@ -1,6 +1,14 @@
 import Foundation
 import ServiceManagement
 
+// MARK: - Debug Logging
+
+private func debugLog(_ message: String) {
+    #if DEBUG
+    print(message)
+    #endif
+}
+
 // MARK: - Launch at Login Manager
 
 /// Protocol for launch at login functionality (enables testing)

@@ -12,11 +12,11 @@ mkdir -p "$OUTPUT_DIR"
 WIDTH=540
 HEIGHT=360
 
-# Icon positions (center of each icon) - adjusted up
+# Icon positions (center of each icon) - vertically centered
 APP_X=135
-APP_Y=150
+APP_Y=160
 APPS_X=405
-APPS_Y=150
+APPS_Y=160
 
 # Dashed rectangle around Applications folder position
 RECT_SIZE=145
@@ -38,8 +38,8 @@ fi
 
 echo "Creating DMG background image..."
 
-# Create solid background (light gray, Apple-style)
-$CONVERT -size ${WIDTH}x${HEIGHT} xc:'#f5f5f7' "$OUTPUT_DIR/bg_base.png"
+# Create transparent background
+$CONVERT -size ${WIDTH}x${HEIGHT} xc:transparent "$OUTPUT_DIR/bg_base.png"
 
 # Create dashed rounded rectangle border for drop zone
 $CONVERT -size ${WIDTH}x${HEIGHT} xc:transparent \

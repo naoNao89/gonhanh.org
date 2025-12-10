@@ -252,7 +252,7 @@ class MenuBarController {
         do {
             try LaunchAtLoginManager.shared.enable()
         } catch {
-            debugLog("[LaunchAtLogin] Error: \(error)")
+            print("[LaunchAtLogin] Error: \(error)")
         }
     }
 

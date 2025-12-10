@@ -20,9 +20,9 @@ WINDOW_WIDTH=540
 WINDOW_HEIGHT=360
 ICON_SIZE=100
 APP_X=135
-APP_Y=150
+APP_Y=160
 APPS_X=405
-APPS_Y=150
+APPS_Y=160
 
 # Check arguments
 APP_PATH="${1:-$MACOS_DIR/build/Release/${APP_NAME}.app}"
@@ -128,7 +128,9 @@ EOF
 # Sync and unmount
 echo "   Finalizing..."
 sync
-hdiutil detach "$MOUNT_DIR" -quiet || hdiutil detach "$MOUNT_DIR" -force
+sleep 3
+hdiutil detach "$MOUNT_DIR" -quiet 2>/dev/null || hdiutil detach "$MOUNT_DIR" -force 2>/dev/null || true
+sleep 2
 
 # Convert to compressed DMG
 echo "   Compressing DMG..."
