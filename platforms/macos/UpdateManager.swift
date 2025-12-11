@@ -113,30 +113,38 @@ class UpdateManager: NSObject, ObservableObject {
         state = .installing
 
         DispatchQueue.global(qos: .userInitiated).async {
-            let error = self.performInstall(dmgPath: dmgPath)
-            if let error = error {
-                DispatchQueue.main.async { self.state = .error(error) }
+            let result = self.prepareInstall(dmgPath: dmgPath)
+
+            DispatchQueue.main.async {
+                switch result {
+                case .success(tempApp: let tempApp):
+                    self.relaunchWithNewApp(tempApp: tempApp)
+                case .failure(error: let error):
+                    self.state = .error(error)
+                }
             }
         }
     }
 
-    private func performInstall(dmgPath: URL) -> String? {
+    private enum InstallResult {
+        case success(tempApp: String)
+        case failure(error: String)
+    }
+
+    private func prepareInstall(dmgPath: URL) -> InstallResult {
         let appName = "GoNhanh.app"
-        let destApp = "/Applications/\(appName)"
-        let pid = ProcessInfo.processInfo.processIdentifier
 
         // Unmount any existing GoNhanh volumes
         shell("hdiutil detach /Volumes/GoNhanh -force 2>/dev/null")
         shell("for v in /Volumes/GoNhanh*; do hdiutil detach \"$v\" -force 2>/dev/null; done")
 
-        // Mount DMG and capture mount point from output
+        // Mount DMG
         let mountOutput = shell("hdiutil attach '\(dmgPath.path)' -nobrowse")
         guard mountOutput.ok else {
-            return "Không thể mở file cài đặt."
+            return .failure(error: "Không thể mở file cài đặt.")
         }
 
-        // Parse mount point from hdiutil output (last column of last line)
-        // Output format: "/dev/disk4s2  Apple_HFS  /Volumes/GoNhanh"
+        // Parse mount point from hdiutil output
         let lines = mountOutput.output.components(separatedBy: "\n")
         var mountPoint = ""
         for line in lines.reversed() {
@@ -152,41 +160,33 @@ class UpdateManager: NSObject, ObservableObject {
 
         guard !mountPoint.isEmpty, FileManager.default.fileExists(atPath: sourceApp) else {
             shell("hdiutil detach '\(mountPoint)' -force 2>/dev/null")
-            return "File cài đặt bị lỗi."
+            return .failure(error: "File cài đặt bị lỗi.")
         }
 
-        // Copy to temp location first (avoid overwriting running app)
+        // Copy to temp location
         let tempApp = "/tmp/GoNhanh-update.app"
         shell("rm -rf '\(tempApp)'")
         guard shell("cp -R '\(sourceApp)' '\(tempApp)'").ok else {
             shell("hdiutil detach '\(mountPoint)' -force")
-            return "Không thể chuẩn bị cài đặt."
+            return .failure(error: "Không thể chuẩn bị cài đặt.")
         }
 
         // Unmount DMG
         shell("hdiutil detach '\(mountPoint)' -force")
 
-        // Background script: wait for app quit → replace → relaunch
-        let script = """
-            while kill -0 \(pid) 2>/dev/null; do sleep 0.1; done
-            sleep 0.3
-            rm -rf '\(destApp)'
-            mv '\(tempApp)' '\(destApp)'
-            open '\(destApp)'
-            """
-        shell("(\(script)) &")
+        return .success(tempApp: tempApp)
+    }
 
-        // Force quit - NSApp.terminate may not work from background thread
-        DispatchQueue.main.async {
-            NSApp.terminate(nil)
-        }
+    private func relaunchWithNewApp(tempApp: String) {
+        let destApp = "/Applications/GoNhanh.app"
+        let script = "sleep 0.5 && rm -rf '\(destApp)' && mv '\(tempApp)' '\(destApp)' && open '\(destApp)'"
 
-        // Fallback: if terminate doesn't work within 1 second, force exit
-        DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
-            exit(0)
-        }
+        let task = Process()
+        task.launchPath = "/bin/sh"
+        task.arguments = ["-c", script]
+        try? task.run()
 
-        return nil
+        NSApp.terminate(nil)
     }
 
     @discardableResult
