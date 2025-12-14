@@ -117,7 +117,7 @@ make install   # Copy vào /Applications
 | Tài liệu | Mô tả |
 |----------|-------|
 | [Kiến trúc hệ thống](docs/system-architecture.md) | FFI, luồng dữ liệu, app compatibility |
-| [Validation](docs/validation-algorithm.md) | 5 quy tắc kiểm tra âm tiết |
+| [Validation Algorithm](docs/validation-algorithm.md) | 5 quy tắc kiểm tra âm tiết |
 | [Hệ thống chữ viết tiếng Việt & Phương pháp gõ](docs/vietnamese-language-system.md) | Cơ sở lý thuyết |
 | [Hướng dẫn phát triển](docs/development.md) | Build, test, contribute |
 
