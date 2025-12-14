@@ -1043,13 +1043,6 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
   - Xóa mục 12 (Thuật toán Xác nhận Âm tiết) - đã có trong [validation-algorithm.md](./validation-algorithm.md)
 
 - **2025-12-08**: Bổ sung Quy tắc Chính tả và Ràng buộc Âm vị học
-│   └── Không có nguyên âm → không phải tiếng Việt
-│
-└── "John" + s → "Johns" (giữ nguyên)
-    └── "J" không phải phụ âm đầu tiếng Việt
-```
-
-### 12.2 Cấu trúc Âm tiết Tiếng Việt (Review)
 
 ```
 Âm tiết = (C₁)(G)V(C₂)
