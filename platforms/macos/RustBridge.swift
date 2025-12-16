@@ -531,10 +531,11 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
         "com.termius-dmg.mac",
         // IDEs/Editors
         "com.microsoft.VSCode", "com.google.antigravity", "dev.zed.Zed",
-        "com.sublimetext.4", "com.sublimetext.3", "com.panic.Nova",
-        "com.jetbrains.fleet"
+        "com.sublimetext.4", "com.sublimetext.3", "com.panic.Nova"
     ]
     if terminals.contains(bundleId) { Log.method("slow:term"); return (.slow, (3000, 8000, 3000)) }
+    // JetBrains IDEs (IntelliJ, PyCharm, WebStorm, GoLand, Fleet, etc.)
+    if bundleId.hasPrefix("com.jetbrains") { Log.method("slow:jb"); return (.slow, (3000, 8000, 3000)) }
 
     // Default: safe delays for stability across unknown apps
     Log.method("default")
