@@ -25,7 +25,7 @@ use crate::input::{self, ToneType};
 use crate::utils;
 use buffer::{Buffer, Char, MAX};
 use shortcut::{InputMethod, ShortcutTable};
-use validation::{is_foreign_word_pattern, is_valid};
+use validation::{is_foreign_word_pattern, is_valid_for_transform, is_valid_with_tones};
 
 /// Engine action result
 #[repr(u8)]
@@ -385,8 +385,10 @@ impl Engine {
         }
 
         // Validate: is this valid Vietnamese?
+        // Use is_valid_with_tones to check modifier requirements (e.g., E+U needs circumflex)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if is_valid(&buffer_keys) {
+        let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
+        if is_valid_with_tones(&buffer_keys, &buffer_tones) {
             self.last_transform = Some(Transform::WAsVowel);
 
             // W shortcut adds ư without replacing anything on screen
@@ -418,12 +420,12 @@ impl Engine {
                 }
             }
 
-            // Validate buffer before applying stroke
+            // Validate buffer structure before applying stroke
             // Only validate if buffer has vowels (complete syllable)
             // Allow stroke on initial consonant before vowel is typed (e.g., "dd" → "đ" then "đi")
             let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
             let has_vowel = buffer_keys.iter().any(|&k| keys::is_vowel(k));
-            if has_vowel && !is_valid(&buffer_keys) {
+            if has_vowel && !is_valid_for_transform(&buffer_keys) {
                 return None;
             }
 
@@ -458,9 +460,9 @@ impl Engine {
             }
         }
 
-        // Validate buffer
+        // Validate buffer structure (not vowel patterns - those are checked after transform)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if !is_valid(&buffer_keys) {
+        if !is_valid_for_transform(&buffer_keys) {
             return None;
         }
 
@@ -633,9 +635,9 @@ impl Engine {
         // but with horns applied it's valid "ươu")
         let has_horn_transforms = self.buf.iter().any(|c| c.tone == tone::HORN);
 
-        // Validate buffer (skip if has horn transforms - already intentional Vietnamese)
+        // Validate buffer structure (skip if has horn transforms - already intentional Vietnamese)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if !has_horn_transforms && !is_valid(&buffer_keys) {
+        if !has_horn_transforms && !is_valid_for_transform(&buffer_keys) {
             return None;
         }
 
