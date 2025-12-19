@@ -266,6 +266,11 @@ class MenuBarController: NSObject, NSWindowDelegate {
         RustBridge.setEnabled(appState.isEnabled)
         RustBridge.setMethod(appState.currentMethod.rawValue)
 
+        // Sync all engine settings (these were loaded before engine was ready)
+        RustBridge.setModernTone(appState.modernTone)
+        RustBridge.setSkipWShortcut(!appState.autoWShortcut)
+        RustBridge.setEscRestore(appState.escRestore)
+
         // Sync shortcuts and start per-app mode manager
         appState.syncShortcutsToEngine()
         PerAppModeManager.shared.start()
