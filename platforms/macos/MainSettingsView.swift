@@ -240,6 +240,24 @@ class AppState: ObservableObject {
         }
     }
 
+    func disableLaunchAtLogin() {
+        do {
+            try LaunchAtLoginManager.shared.disable()
+            refreshLaunchAtLoginStatus()
+        } catch {
+            // If disable fails, open settings for manual action
+            openLoginItemsSettings()
+        }
+    }
+
+    func toggleLaunchAtLogin(_ enabled: Bool) {
+        if enabled {
+            enableLaunchAtLogin()
+        } else {
+            disableLaunchAtLogin()
+        }
+    }
+
     func openLoginItemsSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension") {
             NSWorkspace.shared.open(url)
@@ -618,11 +636,6 @@ struct SettingsPageView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Launch at Login warning (only show if auto-enable failed)
-            if appState.requiresManualLaunchAtLogin {
-                LaunchAtLoginBanner { appState.enableLaunchAtLogin() }
-            }
-
             // Input method settings
             VStack(spacing: 0) {
                 SettingsToggleRow("Bộ gõ tiếng Việt", isOn: $appState.isEnabled)
@@ -646,6 +659,8 @@ struct SettingsPageView: View {
 
             // Other options
             VStack(spacing: 0) {
+                LaunchAtLoginToggleRow(appState: appState)
+                Divider().padding(.leading, 12)
                 SettingsToggleRow("Chuyển chế độ thông minh",
                                   subtitle: "Tự động nhớ trạng thái Anh/Việt cho từng ứng dụng",
                                   isOn: $appState.isSmartModeEnabled)
@@ -1078,6 +1093,31 @@ struct ShortcutRecorderRow: View {
         cancelledObserver = nil
         windowObserver = nil
         isRecording = false
+    }
+}
+
+// MARK: - Launch at Login Toggle Row
+
+struct LaunchAtLoginToggleRow: View {
+    @ObservedObject var appState: AppState
+
+    var body: some View {
+        SettingsRow {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Khởi động cùng hệ thống")
+                    .font(.system(size: 13))
+                Text("Tự động chạy ứng dụng khi đăng nhập")
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(NSColor.secondaryLabelColor))
+            }
+            Spacer()
+            Toggle("", isOn: Binding(
+                get: { appState.isLaunchAtLoginEnabled },
+                set: { appState.toggleLaunchAtLogin($0) }
+            ))
+            .toggleStyle(.switch)
+            .labelsHidden()
+        }
     }
 }
 

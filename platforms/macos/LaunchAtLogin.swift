@@ -25,9 +25,13 @@ class LaunchAtLoginManager: LaunchAtLoginProtocol {
     private init() {}
 
     /// Check if launch at login is currently enabled
+    /// Returns true if status is .enabled OR .requiresApproval (user added manually in System Settings)
     var isEnabled: Bool {
         if #available(macOS 13.0, *) {
-            return SMAppService.mainApp.status == .enabled
+            let status = SMAppService.mainApp.status
+            // .enabled = registered via SMAppService
+            // .requiresApproval = user added app manually in System Settings > Login Items
+            return status == .enabled || status == .requiresApproval
         }
         return false
     }
