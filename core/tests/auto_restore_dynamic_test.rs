@@ -880,8 +880,11 @@ fn valid_vietnamese_structure_not_restored() {
         ("lost ", "lót "), // lót (to line/pad) is a real word
         ("most ", "mót "), // mót (to glean) is a real word
         ("post ", "pót "), // pót is valid Vietnamese structure
-                           // Short words with x producing valid Vietnamese
-                           // mix → mĩ, box → bõ, six → sĩ (valid Vietnamese)
+        // Vietnamese words with tone + circumflex marks
+        ("loxoi ", "lỗi "), // lỗi (error) - l + o + x(hỏi) + o(circumflex) + i
+        ("soso ", "số "),   // số (number) - s + o + s(sắc) + o(circumflex)
+                            // Short words with x producing valid Vietnamese
+                            // mix → mĩ, box → bõ, six → sĩ (valid Vietnamese)
     ]);
 }
 
