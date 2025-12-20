@@ -271,6 +271,18 @@ impl Phonology {
         has_qu_initial: bool,
         has_gi_initial: bool,
     ) -> usize {
+        // Handle gi-initial: first vowel 'i' is part of consonant, use remaining vowels
+        // Example: "giàu" → vowels [i, a, u], but with gi-initial, treat as [a, u] diphthong
+        if has_gi_initial && vowels.len() >= 2 && vowels[0].key == keys::I {
+            let remaining = &vowels[1..];
+            return match remaining.len() {
+                0 => vowels[0].pos, // Shouldn't happen, but fallback
+                1 => remaining[0].pos,
+                2 => Self::find_diphthong_position(remaining, has_final_consonant, modern, false, false),
+                _ => Self::find_default_position(remaining),
+            };
+        }
+
         match vowels.len() {
             0 => 0,
             1 => vowels[0].pos,
@@ -407,7 +419,20 @@ impl Phonology {
             return vowels[2].pos;
         }
 
-        // Default: middle vowel
+        // Rule 3: For unrecognized triphthongs (like "aii", "oee"), fall back to
+        // diphthong rules for the first two vowels. This handles cases where user
+        // types extra vowels after a valid diphthong - the mark should stay on
+        // the correct vowel for the original diphthong.
+        // Example: "tài" + "i" → "tàii" (mark stays on 'a' because "ai" → first)
+        let pair = [k0, k1];
+        if TONE_FIRST_PATTERNS.iter().any(|p| *p == pair) {
+            return vowels[0].pos;
+        }
+        if TONE_SECOND_PATTERNS.iter().any(|p| *p == pair) {
+            return vowels[1].pos;
+        }
+
+        // Default: middle vowel (for truly unknown patterns)
         vowels[1].pos
     }
 
@@ -424,6 +449,18 @@ impl Phonology {
         for v in vowels {
             if v.has_diacritic() {
                 return v.pos;
+            }
+        }
+
+        // Fall back to diphthong rules for first two vowels
+        // This handles cases like "tàiii" where the original diphthong "ai" should keep mark on 'a'
+        if vowels.len() >= 2 {
+            let pair = [vowels[0].key, vowels[1].key];
+            if TONE_FIRST_PATTERNS.iter().any(|p| *p == pair) {
+                return vowels[0].pos;
+            }
+            if TONE_SECOND_PATTERNS.iter().any(|p| *p == pair) {
+                return vowels[1].pos;
             }
         }
 

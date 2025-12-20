@@ -188,3 +188,28 @@ fn bug7_backspace_resets_stroke_reverted() {
     );
     assert_eq!(result, "đ", "After backspace, dd should produce đ again");
 }
+
+// =============================================================================
+// BUG 8: "taifii" -> "taìi", expected "tàii"
+// When extra vowels are typed after a valid diphthong with mark, the mark
+// should stay on the correct vowel for the original diphthong, not move to
+// a new position based on invalid triphthong rules.
+// =============================================================================
+
+#[test]
+fn bug8_extra_vowel_after_diphthong_mark() {
+    let mut e = Engine::new();
+    // taif → tài (mark on 'a' for "ai" diphthong)
+    // taifi → should be tàii (mark stays on 'a', not moved to 'i')
+    // The issue was: typing "taifi" produced "taìi" (mark wrongly on first 'i')
+    // Fixed: "taifi" now correctly produces "tàii" (mark stays on 'a')
+    let result = type_word(&mut e, "taifi");
+    println!("'taifi' -> '{}' (expected: 'tàii')", result);
+    assert_eq!(result, "tàii", "'taifi' should produce 'tàii' (mark on 'a')");
+
+    // Also verify the 6-key input produces 3 i's
+    let mut e2 = Engine::new();
+    let result2 = type_word(&mut e2, "taifii");
+    println!("'taifii' -> '{}' (expected: 'tàiii')", result2);
+    assert_eq!(result2, "tàiii", "'taifii' should produce 'tàiii' (mark on 'a')");
+}
