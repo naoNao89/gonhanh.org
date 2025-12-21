@@ -446,6 +446,22 @@ struct ClickableTextField: NSViewRepresentable {
     }
 }
 
+struct DeleteButton: View {
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "trash")
+                .font(.system(size: 11))
+                .foregroundColor(hovered ? Color(NSColor.secondaryLabelColor) : Color(NSColor.tertiaryLabelColor))
+        }
+        .buttonStyle(.borderless)
+        .onHover { hovered = $0 }
+        .help("Xoá")
+    }
+}
+
 struct VisualEffectBackground: NSViewRepresentable {
     var material: NSVisualEffectView.Material = .sidebar
     var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
@@ -749,14 +765,11 @@ struct ShortcutsSheet: View {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Từ viết tắt").font(.system(size: 15, weight: .semibold))
-                Text("\(appState.shortcuts.count) mục").font(.system(size: 11)).foregroundColor(.secondary)
-            }
-            Spacer()
-            Button("Xong") { dismiss() }.keyboardShortcut(.escape, modifiers: [])
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Từ viết tắt").font(.system(size: 15, weight: .semibold))
+            Text("\(appState.shortcuts.count) mục").font(.system(size: 11)).foregroundColor(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
     }
@@ -831,6 +844,11 @@ struct ShortcutsSheet: View {
                         .foregroundColor(item.isEnabled ? .primary : .secondary)
                         .lineLimit(1)
                 }
+
+                TableColumn("") { item in
+                    DeleteButton { deleteItem(item.id) }
+                }
+                .width(28)
             }
             .tableStyle(.inset(alternatesRowBackgrounds: true))
             .onDeleteCommand { deleteSelected() }
@@ -847,19 +865,22 @@ struct ShortcutsSheet: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             Button(action: importShortcuts) {
-                Image(systemName: "square.and.arrow.down").frame(width: 20, height: 20)
+                Label("Nhập", systemImage: "square.and.arrow.down")
             }
-            .buttonStyle(.borderless).help("Nhập từ file")
+            .buttonStyle(.borderless)
             Button(action: exportShortcuts) {
-                Image(systemName: "square.and.arrow.up").frame(width: 20, height: 20)
+                Label("Xuất", systemImage: "square.and.arrow.up")
             }
-            .buttonStyle(.borderless).disabled(appState.shortcuts.isEmpty).help("Xuất ra file")
+            .buttonStyle(.borderless).disabled(appState.shortcuts.isEmpty)
             Spacer()
+            Button("Xong") { dismiss() }
+                .keyboardShortcut(.escape, modifiers: [])
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .font(.system(size: 12))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 
     private func selectItem(_ item: ShortcutItem) {
@@ -891,6 +912,12 @@ struct ShortcutsSheet: View {
         appState.shortcuts.removeAll { selectedIds.contains($0.id) }
         selectedIds.removeAll()
         clearForm()
+    }
+
+    private func deleteItem(_ id: UUID) {
+        appState.shortcuts.removeAll { $0.id == id }
+        if editingId == id { clearForm() }
+        selectedIds.remove(id)
     }
 
     private func importShortcuts() {
