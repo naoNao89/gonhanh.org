@@ -34,62 +34,69 @@ private enum Log {
 // MARK: - Constants
 
 private enum KeyCode {
+    // Navigation keys
     static let backspace: CGKeyCode = 0x33
     static let forwardDelete: CGKeyCode = 0x75
     static let leftArrow: CGKeyCode = 0x7B
+    static let rightArrow: CGKeyCode = 0x7C
+    static let downArrow: CGKeyCode = 0x7D
+    static let upArrow: CGKeyCode = 0x7E
+    static let space: CGKeyCode = 0x31
+    static let tab: CGKeyCode = 0x30
+    static let returnKey: CGKeyCode = 0x24
+    static let enter: CGKeyCode = 0x4C
+    static let esc: CGKeyCode = 0x35
 
-    // Break keys (punctuation, space, arrows, etc.)
-    static let space: CGKeyCode = 49
-    static let tab: CGKeyCode = 48
-    static let returnKey: CGKeyCode = 36
-    static let enter: CGKeyCode = 76
-    static let esc: CGKeyCode = 53
-    static let left: CGKeyCode = 123
-    static let right: CGKeyCode = 124
-    static let down: CGKeyCode = 125
-    static let up: CGKeyCode = 126
-    static let dot: CGKeyCode = 47
-    static let comma: CGKeyCode = 43
-    static let slash: CGKeyCode = 44
-    static let semicolon: CGKeyCode = 41
-    static let quote: CGKeyCode = 39
-    static let lbracket: CGKeyCode = 33
-    static let rbracket: CGKeyCode = 30
-    static let backslash: CGKeyCode = 42
-    static let minus: CGKeyCode = 27
-    static let equal: CGKeyCode = 24
-    static let backquote: CGKeyCode = 50
+    // Punctuation keys
+    static let dot: CGKeyCode = 0x2F
+    static let comma: CGKeyCode = 0x2B
+    static let slash: CGKeyCode = 0x2C
+    static let semicolon: CGKeyCode = 0x29
+    static let quote: CGKeyCode = 0x27
+    static let lbracket: CGKeyCode = 0x21
+    static let rbracket: CGKeyCode = 0x1E
+    static let backslash: CGKeyCode = 0x2A
+    static let minus: CGKeyCode = 0x1B
+    static let equal: CGKeyCode = 0x18
+    static let backquote: CGKeyCode = 0x32
 
-    // Number keys (shifted = @!#$%^&*())
-    static let n0: CGKeyCode = 29
-    static let n1: CGKeyCode = 18
-    static let n2: CGKeyCode = 19
-    static let n3: CGKeyCode = 20
-    static let n4: CGKeyCode = 21
-    static let n5: CGKeyCode = 23
-    static let n6: CGKeyCode = 22
-    static let n7: CGKeyCode = 26
-    static let n8: CGKeyCode = 28
-    static let n9: CGKeyCode = 25
+    // Number keys (shifted = !@#$%^&*())
+    static let n0: CGKeyCode = 0x1D
+    static let n1: CGKeyCode = 0x12
+    static let n2: CGKeyCode = 0x13
+    static let n3: CGKeyCode = 0x14
+    static let n4: CGKeyCode = 0x15
+    static let n5: CGKeyCode = 0x17
+    static let n6: CGKeyCode = 0x16
+    static let n7: CGKeyCode = 0x1A
+    static let n8: CGKeyCode = 0x1C
+    static let n9: CGKeyCode = 0x19
 }
 
 /// Check if key is a break key (space, punctuation, arrows, etc.)
 /// When shift=true, also treat number keys as break (they produce !@#$%^&*())
 private func isBreakKey(_ keyCode: CGKeyCode, shift: Bool) -> Bool {
-    let standardBreak = [
+    // Standard break keys: space, tab, return, arrows, punctuation
+    let standardBreak: Set<CGKeyCode> = [
         KeyCode.space, KeyCode.tab, KeyCode.returnKey, KeyCode.enter, KeyCode.esc,
-        KeyCode.left, KeyCode.right, KeyCode.up, KeyCode.down,
+        KeyCode.leftArrow, KeyCode.rightArrow, KeyCode.upArrow, KeyCode.downArrow,
         KeyCode.dot, KeyCode.comma, KeyCode.slash, KeyCode.semicolon, KeyCode.quote,
         KeyCode.lbracket, KeyCode.rbracket, KeyCode.backslash, KeyCode.minus,
         KeyCode.equal, KeyCode.backquote
-    ].contains(keyCode)
+    ]
 
-    let shiftedNumber = shift && [
-        KeyCode.n0, KeyCode.n1, KeyCode.n2, KeyCode.n3, KeyCode.n4,
-        KeyCode.n5, KeyCode.n6, KeyCode.n7, KeyCode.n8, KeyCode.n9
-    ].contains(keyCode)
+    if standardBreak.contains(keyCode) { return true }
 
-    return standardBreak || shiftedNumber
+    // Shifted number keys produce symbols: !@#$%^&*()
+    if shift {
+        let numberKeys: Set<CGKeyCode> = [
+            KeyCode.n0, KeyCode.n1, KeyCode.n2, KeyCode.n3, KeyCode.n4,
+            KeyCode.n5, KeyCode.n6, KeyCode.n7, KeyCode.n8, KeyCode.n9
+        ]
+        return numberKeys.contains(keyCode)
+    }
+
+    return false
 }
 
 // MARK: - Injection Method
@@ -1015,7 +1022,8 @@ private func keyboardCallback(
 
         // If this was a break key (punctuation), pass it through after auto-restore
         // The engine's auto-restore doesn't include the break character
-        if isBreakKey(keyCode, shift: shift) {
+        // EXCEPTION: Space is already included by engine's try_auto_restore_on_space()
+        if keyCode != KeyCode.space && isBreakKey(keyCode, shift: shift) {
             return Unmanaged.passUnretained(event)
         }
         return nil

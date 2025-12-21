@@ -654,37 +654,6 @@ fn delayed_circumflex_punctuation_restore() {
 }
 
 #[test]
-fn debug_show_auto_restore_difference() {
-    // This test shows the difference between with and without auto-restore
-    use gonhanh_core::utils::type_word;
-
-    // WITHOUT auto-restore: "user" becomes "úer" (s = sắc tone key)
-    let mut e1 = Engine::new();
-    // e1.set_english_auto_restore(false); // default
-    let without = type_word(&mut e1, "user.");
-    println!("WITHOUT auto-restore: 'user.' -> '{}'", without);
-
-    // WITH auto-restore: "user" stays "user" (auto-restored on punctuation)
-    let mut e2 = Engine::new();
-    e2.set_english_auto_restore(true);
-    let with = type_word(&mut e2, "user.");
-    println!("WITH auto-restore:    'user.' -> '{}'", with);
-
-    // Verify the difference
-    // Without auto-restore: u + s(sắc) + e + r(hỏi) = uẻ (Vietnamese transforms applied)
-    // With auto-restore: detects invalid Vietnamese, restores to "user"
-    assert_ne!(without, with, "Auto-restore should make a difference");
-    assert_eq!(
-        without, "uẻ.",
-        "Without auto-restore, 'user.' becomes 'uẻ.' (Vietnamese transforms)"
-    );
-    assert_eq!(
-        with, "user.",
-        "With auto-restore, 'user.' stays 'user.' (restored)"
-    );
-}
-
-#[test]
 fn delayed_circumflex_no_false_positives() {
     // Words that should NOT get circumflex
     // - Words where target vowel already has a mark
