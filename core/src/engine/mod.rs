@@ -2341,8 +2341,8 @@ impl Engine {
             while i + 2 < chars.len() {
                 let c = chars[i].to_ascii_lowercase();
                 if matches!(c, 'a' | 'e' | 'o')
-                    && chars[i].to_ascii_lowercase() == chars[i + 1].to_ascii_lowercase()
-                    && chars[i + 1].to_ascii_lowercase() == chars[i + 2].to_ascii_lowercase()
+                    && chars[i].eq_ignore_ascii_case(&chars[i + 1])
+                    && chars[i + 1].eq_ignore_ascii_case(&chars[i + 2])
                 {
                     chars.remove(i + 1);
                     continue;
@@ -2366,8 +2366,8 @@ impl Engine {
             // Collapse double 'w' at start to single 'w'
             // Example: "wwax" → "wax" (double 'w' is Telex revert pattern)
             if chars.len() >= 2
-                && chars[0].to_ascii_lowercase() == 'w'
-                && chars[1].to_ascii_lowercase() == 'w'
+                && chars[0].eq_ignore_ascii_case(&'w')
+                && chars[1].eq_ignore_ascii_case(&'w')
             {
                 chars.remove(0);
             }
@@ -2386,12 +2386,10 @@ impl Engine {
                 let c4 = chars[4].to_ascii_lowercase();
 
                 // Check pattern: consonant + vowel + tone_modifier + vowel + vowel (same)
-                let is_consonant_0 =
-                    !matches!(c0, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
+                let is_consonant_0 = !matches!(c0, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
                 let is_vowel_1 = matches!(c1, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
                 let is_tone_2 = matches!(c2, 's' | 'f' | 'r' | 'x' | 'j');
-                let is_circumflex_vowel_34 =
-                    matches!(c3, 'a' | 'e' | 'o') && c3 == c4;
+                let is_circumflex_vowel_34 = matches!(c3, 'a' | 'e' | 'o') && c3 == c4;
 
                 if is_consonant_0 && is_vowel_1 && is_tone_2 && is_circumflex_vowel_34 {
                     // Build: C + (V with tone) + V + V
@@ -2517,7 +2515,11 @@ impl Engine {
             let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
             if tone_modifiers.contains(&last_key) && last_key == second_last_key {
                 // Count occurrences of this modifier key in raw_input
-                let occurrence_count = self.raw_input.iter().filter(|(k, _, _)| *k == last_key).count();
+                let occurrence_count = self
+                    .raw_input
+                    .iter()
+                    .filter(|(k, _, _)| *k == last_key)
+                    .count();
                 // Only apply if the double at end is the only occurrence (exactly 2)
                 if occurrence_count == 2 {
                     // Buffer should end with that consonant (after revert)
@@ -2959,8 +2961,7 @@ impl Engine {
             let is_consonant_0 = keys::is_consonant(c0);
             let is_vowel_1 = keys::is_vowel(c1);
             let is_tone_2 = matches!(c2, keys::S | keys::F | keys::R | keys::X | keys::J);
-            let is_circumflex_vowel_34 =
-                matches!(c3, keys::A | keys::E | keys::O) && c3 == c4;
+            let is_circumflex_vowel_34 = matches!(c3, keys::A | keys::E | keys::O) && c3 == c4;
 
             if is_consonant_0 && is_vowel_1 && is_tone_2 && is_circumflex_vowel_34 {
                 return true;
