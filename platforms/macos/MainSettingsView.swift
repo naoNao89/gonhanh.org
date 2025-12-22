@@ -106,6 +106,13 @@ class AppState: ObservableObject {
         }
     }
 
+    @Published var autoCapitalize: Bool = false {
+        didSet {
+            UserDefaults.standard.set(autoCapitalize, forKey: SettingsKey.autoCapitalize)
+            RustBridge.setAutoCapitalize(autoCapitalize)
+        }
+    }
+
     @Published var soundEnabled: Bool = false {
         didSet {
             UserDefaults.standard.set(soundEnabled, forKey: SettingsKey.soundEnabled)
@@ -140,6 +147,7 @@ class AppState: ObservableObject {
         escRestore = defaults.bool(forKey: SettingsKey.escRestore)
         modernTone = defaults.bool(forKey: SettingsKey.modernTone)
         englishAutoRestore = defaults.bool(forKey: SettingsKey.englishAutoRestore)
+        autoCapitalize = defaults.bool(forKey: SettingsKey.autoCapitalize)
         soundEnabled = defaults.bool(forKey: SettingsKey.soundEnabled)
 
         // Sync settings to Rust engine
@@ -161,6 +169,7 @@ class AppState: ObservableObject {
         RustBridge.setEscRestore(escRestore)
         RustBridge.setModernTone(modernTone)
         RustBridge.setEnglishAutoRestore(englishAutoRestore)
+        RustBridge.setAutoCapitalize(autoCapitalize)
     }
 
     private func loadShortcuts() {
@@ -690,6 +699,8 @@ struct SettingsPageView: View {
                 SettingsToggleRow("Âm thanh chuyển ngôn ngữ", isOn: $appState.soundEnabled)
                 Divider().padding(.leading, 12)
                 SettingsToggleRow("Đặt dấu kiểu mới (oà, uý)", isOn: $appState.modernTone)
+                Divider().padding(.leading, 12)
+                SettingsToggleRow("Tự viết hoa đầu câu", isOn: $appState.autoCapitalize)
                 Divider().padding(.leading, 12)
                 SettingsToggleRow("Gõ ESC hoàn tác dấu", isOn: $appState.escRestore)
             }

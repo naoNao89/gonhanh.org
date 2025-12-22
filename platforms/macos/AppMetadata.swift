@@ -78,6 +78,7 @@ enum SettingsKey {
     static let escRestore = "gonhanh.escRestore"
     static let modernTone = "gonhanh.modernTone"
     static let englishAutoRestore = "gonhanh.englishAutoRestore"
+    static let autoCapitalize = "gonhanh.autoCapitalize"
     static let launchAtLoginUserDisabled = "gonhanh.launchAtLogin.userDisabled"
     static let soundEnabled = "gonhanh.soundEnabled"
 }

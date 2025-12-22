@@ -370,6 +370,20 @@ mod test_utils {
         }
     }
 
+    /// Run Telex test cases with auto-capitalize enabled
+    pub fn telex_auto_capitalize(cases: &[(&str, &str)]) {
+        for (input, expected) in cases {
+            let mut e = Engine::new();
+            e.set_auto_capitalize(true);
+            let result = type_word(&mut e, input);
+            assert_eq!(
+                result, *expected,
+                "[Telex AutoCapitalize] '{}' → '{}'",
+                input, result
+            );
+        }
+    }
+
     /// Run VNI test cases
     pub fn vni(cases: &[(&str, &str)]) {
         for (input, expected) in cases {

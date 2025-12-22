@@ -135,6 +135,44 @@ impl WordHistory {
     }
 }
 
+/// Check if key is sentence-ending punctuation (triggers auto-capitalize)
+/// Triggers: . ! ? Enter
+#[inline]
+fn is_sentence_ending(key: u16, shift: bool) -> bool {
+    key == keys::RETURN
+        || key == keys::ENTER
+        || key == keys::DOT
+        || (shift && key == keys::N1) // !
+        || (shift && key == keys::SLASH) // ?
+}
+
+/// Check if a break key should reset pending_capitalize
+/// Neutral keys like quotes, parentheses, arrows should NOT reset (preserve pending)
+/// Word-breaking keys like comma should reset
+#[inline]
+fn should_reset_pending_capitalize(key: u16, shift: bool) -> bool {
+    // These neutral characters/keys should NOT reset pending_capitalize:
+    // - Quotes: ' " (QUOTE with/without shift)
+    // - Parentheses: ( ) (Shift+9, Shift+0)
+    // - Brackets: [ ] { } (LBRACKET, RBRACKET with/without shift)
+    // - Arrow keys: navigation shouldn't reset pending state
+    // - Tab, ESC: navigation/cancel shouldn't reset pending state
+    let is_neutral = key == keys::QUOTE
+        || key == keys::LBRACKET
+        || key == keys::RBRACKET
+        || (shift && key == keys::N9)  // (
+        || (shift && key == keys::N0)  // )
+        || key == keys::LEFT
+        || key == keys::RIGHT
+        || key == keys::UP
+        || key == keys::DOWN
+        || key == keys::TAB
+        || key == keys::ESC;
+
+    // Reset for all other break keys (comma, semicolon, etc.)
+    !is_neutral
+}
+
 /// Convert shifted number key to its symbol character
 /// Shift+1 → !, Shift+2 → @, Shift+3 → #, etc.
 fn shifted_number_to_symbol(key: u16) -> Option<char> {
@@ -223,6 +261,14 @@ pub struct Engine {
     /// Buffer was just restored from DELETE - clear on next letter input
     /// This prevents typing after restore from appending to old buffer
     restored_pending_clear: bool,
+    /// Auto-capitalize first letter after sentence-ending punctuation
+    /// Triggers: . ! ? Enter → next letter becomes uppercase
+    auto_capitalize: bool,
+    /// Pending capitalize state: set after sentence-ending punctuation
+    pending_capitalize: bool,
+    /// Tracks if auto-capitalize was just used on the current word
+    /// Used to restore pending_capitalize when user deletes the capitalized letter
+    auto_capitalize_used: bool,
 }
 
 impl Default for Engine {
@@ -257,6 +303,9 @@ impl Engine {
             had_vowel_triggered_circumflex: false,
             shortcut_prefix: None,
             restored_pending_clear: false,
+            auto_capitalize: false, // Default: OFF
+            pending_capitalize: false,
+            auto_capitalize_used: false,
         }
     }
 
@@ -296,6 +345,14 @@ impl Engine {
     /// Set whether to enable English auto-restore (experimental)
     pub fn set_english_auto_restore(&mut self, enabled: bool) {
         self.english_auto_restore = enabled;
+    }
+
+    /// Set whether to enable auto-capitalize after sentence-ending punctuation
+    pub fn set_auto_capitalize(&mut self, enabled: bool) {
+        self.auto_capitalize = enabled;
+        if !enabled {
+            self.pending_capitalize = false;
+        }
     }
 
     pub fn shortcuts(&self) -> &ShortcutTable {
@@ -393,6 +450,7 @@ impl Engine {
                 // Additional space after commit - increment counter
                 self.spaces_after_commit = self.spaces_after_commit.saturating_add(1);
             }
+            self.auto_capitalize_used = false; // Reset on word commit
             self.clear();
             return restore_result;
         }
@@ -421,9 +479,23 @@ impl Engine {
             if self.buf.is_empty() && shift && keys::is_number(key) {
                 if let Some(symbol) = shifted_number_to_symbol(key) {
                     self.shortcut_prefix = Some(symbol);
+                    // Auto-capitalize: set pending if sentence-ending (! or ?)
+                    if self.auto_capitalize && is_sentence_ending(key, shift) {
+                        self.pending_capitalize = true;
+                    }
                     return Result::none(); // Let the symbol pass through
                 }
             }
+
+            // Auto-capitalize: set pending if sentence-ending punctuation
+            if self.auto_capitalize && is_sentence_ending(key, shift) {
+                self.pending_capitalize = true;
+            } else if self.auto_capitalize && should_reset_pending_capitalize(key, shift) {
+                // Reset pending for word-breaking keys (comma, semicolon, etc.)
+                // But preserve pending for neutral keys (quotes, parentheses, brackets)
+                self.pending_capitalize = false;
+            }
+            self.auto_capitalize_used = false; // Reset on word boundary
 
             let restore_result = self.try_auto_restore_on_break();
             self.clear();
@@ -473,6 +545,12 @@ impl Engine {
             // but actually didn't - let them start fresh on next letter input
             if self.buf.is_empty() {
                 self.restored_pending_clear = false;
+                // Restore pending_capitalize if user deleted the auto-capitalized letter
+                // This allows: ". B" → delete B → ". " → type again → auto-capitalizes
+                if self.auto_capitalize_used {
+                    self.pending_capitalize = true;
+                    self.auto_capitalize_used = false;
+                }
             }
             return Result::none();
         }
@@ -493,12 +571,37 @@ impl Engine {
             self.restored_pending_clear = false;
         }
 
+        // Auto-capitalize: force uppercase for first letter after sentence-ending punctuation
+        let was_auto_capitalized = self.pending_capitalize && keys::is_letter(key) && !caps;
+        let effective_caps = if self.pending_capitalize && keys::is_letter(key) {
+            self.pending_capitalize = false;
+            self.auto_capitalize_used = true; // Track that we used auto-capitalize
+            true // Force uppercase
+        } else {
+            // Reset pending on number (e.g., "1.5" should not capitalize "5")
+            if self.pending_capitalize && keys::is_number(key) {
+                self.pending_capitalize = false;
+                self.auto_capitalize_used = false; // Number after punctuation, reset
+            }
+            caps
+        };
+
         // Record raw keystroke for ESC restore (letters and numbers only)
         if keys::is_letter(key) || keys::is_number(key) {
-            self.raw_input.push((key, caps, shift));
+            self.raw_input.push((key, effective_caps, shift));
         }
 
-        self.process(key, caps, shift)
+        let result = self.process(key, effective_caps, shift);
+
+        // If auto-capitalize triggered for first letter of a new word and process returned none,
+        // we need to send the uppercase character since the original key was lowercase
+        if was_auto_capitalized && result.action == Action::None as u8 && self.buf.len() == 1 {
+            if let Some(ch) = crate::utils::key_to_char(key, true) {
+                return Result::send(0, &[ch]);
+            }
+        }
+
+        result
     }
 
     /// Main processing pipeline - pattern-based
@@ -2469,7 +2572,15 @@ impl Engine {
 
     /// Clear buffer and raw input history
     /// Note: Does NOT clear word_history to preserve backspace-after-space feature
+    /// Also restores pending_capitalize if auto_capitalize was used (for selection-delete)
     pub fn clear(&mut self) {
+        // Restore pending_capitalize if auto_capitalize was used
+        // This handles selection-delete: user selects and deletes text,
+        // we should restore pending state so next letter is capitalized
+        if self.auto_capitalize_used {
+            self.pending_capitalize = true;
+            self.auto_capitalize_used = false;
+        }
         self.buf.clear();
         self.raw_input.clear();
         self.last_transform = None;

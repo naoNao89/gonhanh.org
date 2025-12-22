@@ -273,6 +273,7 @@ class MenuBarController: NSObject, NSWindowDelegate {
         RustBridge.setSkipWShortcut(!appState.autoWShortcut)
         RustBridge.setEscRestore(appState.escRestore)
         RustBridge.setEnglishAutoRestore(appState.englishAutoRestore)
+        RustBridge.setAutoCapitalize(appState.autoCapitalize)
 
         // Sync shortcuts and start per-app mode manager
         appState.syncShortcutsToEngine()

@@ -207,6 +207,20 @@ pub extern "C" fn ime_english_auto_restore(enabled: bool) {
     }
 }
 
+/// Enable/disable auto-capitalize after sentence-ending punctuation.
+///
+/// When `enabled` is true, automatically capitalizes the first letter
+/// after sentence-ending punctuation (. ! ? Enter).
+/// When `enabled` is false (default), no auto-capitalize happens.
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_auto_capitalize(enabled: bool) {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.set_auto_capitalize(enabled);
+    }
+}
+
 /// Clear the input buffer.
 ///
 /// Call on word boundaries (space, punctuation).

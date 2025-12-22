@@ -440,6 +440,7 @@ private struct ImeResult {
 @_silgen_name("ime_free_tone") private func ime_free_tone(_ enabled: Bool)
 @_silgen_name("ime_modern") private func ime_modern(_ modern: Bool)
 @_silgen_name("ime_english_auto_restore") private func ime_english_auto_restore(_ enabled: Bool)
+@_silgen_name("ime_auto_capitalize") private func ime_auto_capitalize(_ enabled: Bool)
 @_silgen_name("ime_clear") private func ime_clear()
 @_silgen_name("ime_clear_all") private func ime_clear_all()
 @_silgen_name("ime_free") private func ime_free(_ result: UnsafeMutablePointer<ImeResult>?)
@@ -523,6 +524,13 @@ class RustBridge {
     static func setEnglishAutoRestore(_ enabled: Bool) {
         ime_english_auto_restore(enabled)
         Log.info("English auto-restore: \(enabled)")
+    }
+
+    /// Set whether to enable auto-capitalize after sentence-ending punctuation
+    /// When enabled, capitalizes first letter after . ! ? Enter
+    static func setAutoCapitalize(_ enabled: Bool) {
+        ime_auto_capitalize(enabled)
+        Log.info("Auto-capitalize: \(enabled)")
     }
 
     static func clearBuffer() { ime_clear() }
@@ -917,8 +925,21 @@ private func keyboardCallback(
         return nil
     }
 
-    // Clear session buffer on Enter/Escape (submit or cancel)
-    if keyCode == 0x24 || keyCode == 0x35 {  // Enter or Escape
+    // Compute modifier states early - needed for Enter handling and later processing
+    let shift = flags.contains(.maskShift)
+    let caps = shift || flags.contains(.maskAlphaShift)
+    let ctrl = flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate)
+
+    // Enter/Escape: submit or cancel
+    // IMPORTANT: Send Enter to engine FIRST to trigger auto-capitalize pending state,
+    // then clear buffer. Engine sets pending_capitalize when it sees Enter key.
+    if keyCode == 0x24 || keyCode == 0x4C {  // Return (0x24) or Enter/Numpad (0x4C)
+        // Let engine see Enter to set pending_capitalize for next word
+        _ = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: ctrl, shift: shift)
+        TextInjector.shared.clearSessionBuffer()
+        return Unmanaged.passUnretained(event)
+    }
+    if keyCode == 0x35 {  // Escape
         TextInjector.shared.clearSessionBuffer()
         RustBridge.clearBuffer()
         return Unmanaged.passUnretained(event)
@@ -980,10 +1001,6 @@ private func keyboardCallback(
         // Pass through all Cmd shortcuts
         return Unmanaged.passUnretained(event)
     }
-
-    let shift = flags.contains(.maskShift)
-    let caps = shift || flags.contains(.maskAlphaShift)
-    let ctrl = flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate)
 
     // Backspace handling: try to restore word from screen when backspacing into it
     // This enables editing marks on previously committed words

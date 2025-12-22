@@ -3261,7 +3261,10 @@ fn test_chuan_bi_tone_position() {
     // r = hỏi tone
     // With final 'n', "uâ" → tone on â (not ủ)
     let result = type_word(&mut e, "chuaarn ");
-    assert_eq!(result, "chuẩn ", "ua with final consonant: tone on â, not ủ");
+    assert_eq!(
+        result, "chuẩn ",
+        "ua with final consonant: tone on â, not ủ"
+    );
 
     // "bị" = b + i + j
     let result2 = type_word(&mut e, "bij ");

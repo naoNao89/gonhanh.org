@@ -8,7 +8,8 @@
 
 // Re-export core test utilities
 pub use gonhanh_core::utils::{
-    telex, telex_auto_restore, telex_traditional, type_word, vni, vni_traditional,
+    telex, telex_auto_capitalize, telex_auto_restore, telex_traditional, type_word, vni,
+    vni_traditional,
 };
 
 use gonhanh_core::engine::{Action, Engine};
