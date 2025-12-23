@@ -3246,6 +3246,23 @@ impl Engine {
         // Telex modifiers that add tone marks
         let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
 
+        // Pattern: Consecutive tone modifiers followed by VOWEL (English pattern)
+        // Example: "cursor" = c-u-r-s-o-r → "rs" followed by vowel 'o' → English
+        // Counter-example: "đướng" typed as dduowfsng → "fs" followed by consonant 'n' → Vietnamese
+        // Vietnamese allows consecutive modifiers for tone adjustment (f→s changes huyền to sắc)
+        for i in 0..self.raw_input.len().saturating_sub(2) {
+            let (key, _, _) = self.raw_input[i];
+            let (next_key, _, _) = self.raw_input[i + 1];
+            let (after_key, _, _) = self.raw_input[i + 2];
+            // Two consecutive modifiers followed by vowel → English
+            if tone_modifiers.contains(&key)
+                && tone_modifiers.contains(&next_key)
+                && keys::is_vowel(after_key)
+            {
+                return true;
+            }
+        }
+
         // Find positions of modifiers in raw_input
         for i in 0..self.raw_input.len() {
             let (key, _, _) = self.raw_input[i];

@@ -113,7 +113,7 @@ fn revert_at_end_restores_long_english_words() {
         ("awwait ", "await "), // double w reverts horn, restore to English
         // Double s in middle: usser → user (ss reverts sắc, buffer has "user")
         ("usser ", "user "), // u-s-s-e-r → buffer "user", restore to buffer
-        // Note: "user" without double s also works (tested in english_auto_restore_test.rs)
+                             // Note: "user" without double s also works (tested in english_auto_restore_test.rs)
     ]);
 }
 
@@ -149,21 +149,25 @@ fn double_s_middle_pattern() {
 }
 
 #[test]
-fn complex_words_with_multiple_transforms() {
-    // Words where multiple Vietnamese transforms happen but should stay Vietnamese
-    // These are edge cases that test the auto-restore heuristics
+fn consecutive_modifiers_followed_by_vowel() {
+    // Pattern: consecutive tone modifiers (r+s, s+r, etc.) followed by vowel → English
+    // Vietnamese doesn't have this pattern; it's characteristic of English words
     telex_auto_restore(&[
-        // cursor: c-u-r-s-o-r → "cuỏ" (multiple transforms)
-        // - 'r' after 'u' adds hỏi → củ
-        // - 's' changes hỏi to sắc → cú
-        // - 'o' opens new syllable → cuó
-        // - final 'r' adds hỏi to 'o' → cuỏ
-        // This stays as Vietnamese because buffer "cuỏ" is structurally valid
-        ("cursor ", "cuỏ "),
-        // cusor: c-u-s-o-r → "cuỏ"
-        // - 's' adds sắc to 'u' → cú
-        // - 'o' opens new syllable → cuó
-        // - 'r' adds hỏi to 'o' → cuỏ
+        // cursor: c-u-r-s-o-r → "rs" + vowel 'o' → English
+        ("cursor ", "cursor "),
+        // version: v-e-r-s-i-o-n → "rs" + vowel 'i' → English
+        ("version ", "version "),
+        // person: p-e-r-s-o-n → "rs" + vowel 'o' → English
+        ("person ", "person "),
+        // jersey: j-e-r-s-e-y → "rs" + vowel 'e' → English
+        ("jersey ", "jersey "),
+        // versus: v-e-r-s-u-s → "rs" + vowel 'u' → English
+        ("versus ", "versus "),
+        // parser: p-a-r-s-e-r → "rs" + vowel 'e' → English
+        ("parser ", "parser "),
+        // nursery: n-u-r-s-e-r-y → "rs" + vowel 'e' → English
+        ("nursery ", "nursery "),
+        // cusor (typo): no consecutive modifiers + vowel pattern → stays Vietnamese
         ("cusor ", "cuỏ "),
     ]);
 }
