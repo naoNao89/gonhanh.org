@@ -163,6 +163,14 @@ private class TextInjector {
         usleep(5000)  // Settle time
     }
 
+    /// Post break key (Enter, punctuation) synthetically after text injection
+    /// Used for auto-restore to ensure correct event ordering
+    func postBreakKey(keyCode: CGKeyCode, shift: Bool) {
+        guard let src = CGEventSource(stateID: .privateState) else { return }
+        let flags: CGEventFlags = shift ? .maskShift : []
+        postKey(keyCode, source: src, flags: flags)
+    }
+
     /// Inject text replacement synchronously (blocks until complete)
     func injectSync(bs: Int, text: String, method: InjectionMethod, delays: (UInt32, UInt32, UInt32), proxy: CGEventTapProxy) {
         semaphore.wait()
@@ -953,18 +961,16 @@ private func keyboardCallback(
     // then clear buffer. Engine sets pending_capitalize when it sees Enter key.
     // Also handle auto-restore and shortcut results (same as ESC handling)
     if keyCode == 0x24 || keyCode == 0x4C {  // Return (0x24) or Enter/Numpad (0x4C)
-        // Detect injection method once per keystroke (expensive AX query)
         let (method, delays) = detectMethod()
 
-        // Process key and handle auto-restore/shortcut result
-        if let (bs, chars, _) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: ctrl, shift: shift) {
+        if let (bs, chars, keyConsumed) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: ctrl, shift: shift) {
             sendReplacement(backspace: bs, chars: chars, method: method, delays: delays, proxy: proxy)
 
-            // If shortcut/restore triggered (has backspace or output), consume Enter key
-            // This prevents extra newline after shortcut replacement
             if bs > 0 || !chars.isEmpty {
                 TextInjector.shared.clearSessionBuffer()
-                return nil  // Consume Enter key
+                // Shortcut: consumed, don't post. Auto-restore: post Enter after replacement
+                if !keyConsumed { TextInjector.shared.postBreakKey(keyCode: keyCode, shift: shift) }
+                return nil
             }
         }
 
@@ -1098,11 +1104,14 @@ private func keyboardCallback(
     if let (bs, chars, keyConsumed) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: ctrl, shift: shift) {
         sendReplacement(backspace: bs, chars: chars, method: method, delays: delays, proxy: proxy)
 
-        // Pass through break keys (punctuation) for auto-restore, except:
-        // - Space: already handled by engine
-        // - Consumed keys: used by shortcuts (e.g., ">" in "->")
-        let shouldPassThrough = isBreakKey(keyCode, shift: shift) && keyCode != KeyCode.space && !keyConsumed
-        return shouldPassThrough ? Unmanaged.passUnretained(event) : nil
+        // Break keys (punctuation, not space): pass through or post synthetically
+        let isBreak = isBreakKey(keyCode, shift: shift) && keyCode != KeyCode.space && !keyConsumed
+        if isBreak {
+            // Auto-restore: post break key after replacement for correct ordering
+            if bs > 0 && !chars.isEmpty { TextInjector.shared.postBreakKey(keyCode: keyCode, shift: shift) }
+            else { return Unmanaged.passUnretained(event) }
+        }
+        return nil
     }
 
     // For selectAll method: handle pass-through keys (space, punctuation, etc.)
