@@ -1000,6 +1000,8 @@ fn pattern11_inh_valid_vietnamese() {
         ("minhs ", "mính "),   // mính - valid structure
         ("linhs ", "lính "),   // lính (soldier) - valid
         ("chinhs ", "chính "), // chính (main/correct) - valid
+        // Single vowel with tone - valid Vietnamese
+        ("ys ", "ý "), // ý (idea/opinion) - valid
     ]);
 }
 
@@ -1014,6 +1016,15 @@ fn pattern11_ing_immediate_output() {
         ("sings", "sings"),   // s + i + n + g + s → should stay "sings"
                               // Note: "wings" and "brings" have other invalid patterns (w initial, br cluster)
                               // so they may be handled by other validation rules
+    ]);
+}
+
+#[test]
+fn pattern11b_v1v2v1_immediate_output() {
+    // V1-V2-V1 vowel pattern should NOT trigger circumflex
+    // Example: "queue" = e-u-e, third 'e' should NOT circumflex first 'e'
+    telex(&[
+        ("queue", "queue"), // qu + e + u + e → should stay "queue", not "quêu"
     ]);
 }
 

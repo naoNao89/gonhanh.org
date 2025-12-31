@@ -201,6 +201,7 @@ pub const COMMON_SINGLE_VOWEL_WORDS: &[(u16, u8)] = &[
     (keys::U, 4), // ũ - exists
     (keys::O, 2), // ò - skip "of" restore (keep current behavior)
     (keys::I, 2), // ì - skip "if" restore (keep current behavior)
+    (keys::Y, 1), // ý - common word meaning "idea/opinion/intention"
 ];
 
 /// Common Vietnamese single-vowel with CIRCUMFLEX + mark combinations

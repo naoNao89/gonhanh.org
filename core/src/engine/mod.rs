@@ -1518,6 +1518,28 @@ impl Engine {
                                 return None;
                             }
                         }
+
+                        // Check for V1-V2-V1 pattern in last 2 vowels + new key
+                        // Example: "queue" has buffer vowels [U, E, U], new key = E
+                        // Last 2 vowels = [E, U], new key = E → pattern is E-U-E (V1-V2-V1)
+                        // ONLY block when:
+                        // 1. NO Vietnamese indicators present (mark/stroke)
+                        // 2. There's a consonant initial (foreign word pattern)
+                        // This allows: "oio" → "ôi" (no initial, valid VN interjection)
+                        // But blocks: "queue" → "quêu" (has "qu" initial, foreign word)
+                        let has_vn_indicator = self.buf.iter().any(|c| c.mark > 0 || c.stroke);
+                        let has_initial =
+                            self.buf.get(0).is_some_and(|c| keys::is_consonant(c.key));
+
+                        if !has_vn_indicator && has_initial && vowels.len() >= 2 {
+                            let last_two = &vowels[vowels.len() - 2..];
+                            let v1 = last_two[0]; // second-to-last vowel
+                            let v2 = last_two[1]; // last vowel
+                                                  // V1-V2-V1 pattern: new key matches v1 but not v2
+                            if key == v1 && key != v2 {
+                                return None;
+                            }
+                        }
                     }
                 }
 
@@ -3250,6 +3272,56 @@ impl Engine {
                 });
             if has_same_modifier_doubled_vowel {
                 return self.build_raw_chars();
+            }
+        }
+
+        // Check 6: V1-V2-V1 vowel pattern that collapsed via circumflex
+        // Pattern: raw input has 3+ consecutive vowels ending with same vowel that started
+        // Example: "queue" raw=[q,u,e,u,e] → consecutive vowels "eue" → buffer "quêu"
+        // The third vowel triggers circumflex on first vowel and gets consumed
+        // EXCEPTION: If buffer has stroke (đ), it's intentional Vietnamese
+        if is_word_complete && !has_stroke && raw_input_valid_en {
+            // Extract consecutive vowel sequence from end of raw_input
+            let raw_vowels: Vec<u16> = self
+                .raw_input
+                .iter()
+                .map(|(k, _, _)| *k)
+                .filter(|k| keys::is_vowel(*k))
+                .collect();
+
+            // Check for V1-V2-V1 pattern (3+ vowels where first and last are same, middle is different)
+            if raw_vowels.len() >= 3 {
+                let last_three = &raw_vowels[raw_vowels.len() - 3..];
+                let v1 = last_three[0];
+                let v2 = last_three[1];
+                let v3 = last_three[2];
+
+                // V1-V2-V1 pattern: first and last are same vowel, middle is different
+                if v1 == v3 && v1 != v2 {
+                    // Check if buffer has circumflex on v1 type followed by v2
+                    let buf_vowels: Vec<(u16, u8)> = self
+                        .buf
+                        .iter()
+                        .filter(|c| keys::is_vowel(c.key))
+                        .map(|c| (c.key, c.tone))
+                        .collect();
+
+                    // Buffer should have 2 vowels (V1' with circumflex, V2)
+                    if buf_vowels.len() >= 2 {
+                        let buf_last_two = &buf_vowels[buf_vowels.len() - 2..];
+                        let (buf_v1, buf_v1_tone) = buf_last_two[0];
+                        let (buf_v2, _) = buf_last_two[1];
+
+                        // V1 in buffer has circumflex and matches raw V1, V2 matches
+                        if buf_v1 == v1
+                            && buf_v1_tone == tone::CIRCUMFLEX
+                            && buf_v2 == v2
+                            && !self.buf.iter().any(|c| c.mark > 0)
+                        {
+                            return self.build_raw_chars();
+                        }
+                    }
+                }
             }
         }
 
