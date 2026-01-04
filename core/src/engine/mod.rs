@@ -3824,6 +3824,22 @@ impl Engine {
                 i += 1;
             }
 
+            // 1b. Triple consonant → collapse to double: "bufffer" → "buffer", "afffair" → "affair"
+            // English never has 3 consecutive same consonants, so this is always a revert artifact
+            let mut i = 0;
+            while i + 2 < chars.len() {
+                let c = chars[i].to_ascii_lowercase();
+                // Check for triple same consonant (common modifiers: s, f, r, x, j)
+                if chars[i].eq_ignore_ascii_case(&chars[i + 1])
+                    && chars[i + 1].eq_ignore_ascii_case(&chars[i + 2])
+                    && !matches!(c, 'a' | 'e' | 'i' | 'o' | 'u' | 'y')
+                {
+                    chars.remove(i + 1);
+                    continue;
+                }
+                i += 1;
+            }
+
             // 2. Double vowel → single ONLY if:
             //    - Double vowel immediately precedes tone modifier at end (Telex pattern)
             //    - NOT SaaS pattern (same consonant at start/end)

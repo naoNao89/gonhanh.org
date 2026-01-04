@@ -731,10 +731,25 @@ fn pattern9_double_f_words() {
         ("suffer ", "suffer "),
         ("differ ", "differ "),
         ("buffer ", "buffer "),
+        ("bufffer ", "buffer "), // triple 'f' → collapse to double 'f'
         ("affair ", "affair "),
-        ("affair ", "affair "),
+        ("afffair ", "affair "), // triple 'f' in middle → collapse to double 'f'
         ("afford ", "afford "),
+        ("affford ", "afford "), // triple 'f' → collapse to double 'f'
         ("offend ", "offend "),
+        ("offfend ", "offend "), // triple 'f' → collapse to double 'f'
+        // Triple 'r' cases
+        ("error ", "error "),
+        ("errror ", "error "), // triple 'r' → collapse to double 'r'
+        ("mirror ", "mirror "),
+        ("mirrror ", "mirror "), // triple 'r' → collapse to double 'r'
+        ("sorry ", "sorry "),
+        ("sorrry ", "sorry "), // triple 'r' → collapse to double 'r'
+        // Triple 's' cases (middle of word)
+        ("issue ", "issue "),
+        ("isssue ", "issue "), // triple 's' → collapse to double 's'
+        ("assess ", "assess "),
+        ("assssess ", "assess "), // triple 's' in middle → collapse
     ]);
 }
 
