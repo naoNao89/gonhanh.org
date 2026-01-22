@@ -28,18 +28,6 @@ Những người đã tin tưởng và ủng hộ dự án.
   </tr>
 </table>
 
-### 🥈 Silver
-
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/nguyencaokyvn">
-        <img src="https://avatars.githubusercontent.com/u/2754877?u=b4cf2da20034865ba9deda9458024215f0d7b39f&v=4" width="80" style="border-radius:50%"/><br/>
-        <b>nguyencaokyvn</b> 🥈
-      </a>
-    </td>
-  </tr>
-</table>
 
 ### 💜 Backers
 
@@ -825,6 +813,6 @@ Những người đã báo lỗi, góp ý, và thảo luận giúp định hình
 
 ---
 
-*Được cập nhật tự động · Lần cuối: 21/01/2026*
+*Được cập nhật tự động · Lần cuối: 22/01/2026*
 
 </div>
