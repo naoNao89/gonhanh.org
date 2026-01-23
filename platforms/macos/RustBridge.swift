@@ -1487,8 +1487,8 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
         // Other code editors
         "dev.zed.Zed", "com.sublimetext.4", "com.sublimetext.3", "com.panic.Nova"
     ]
-    if codeApps.contains(bundleId) { return cached(.slow, (8000, 15000, 8000), "slow:code") }
-    if bundleId.hasPrefix("com.jetbrains") { return cached(.slow, (8000, 15000, 8000), "slow:jb") }
+    if codeApps.contains(bundleId) { return cached(.slow, (8000, 25000, 8000), "slow:code") }
+    if bundleId.hasPrefix("com.jetbrains") { return cached(.slow, (8000, 25000, 8000), "slow:jb") }
 
     // Default: safe delays
     return cached(.fast, (1000, 3000, 1500), "default")
