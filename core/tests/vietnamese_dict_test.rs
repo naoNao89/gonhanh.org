@@ -777,6 +777,104 @@ fn vietnamese_dict_telex_auto_restore() {
 }
 
 // ============================================================
+// TYPING VARIANTS TEST (22K)
+// ============================================================
+
+/// Test Vietnamese typing variants from vietnamese_22k_typing_variants.txt
+/// Format: word TAB variant1,variant2,...
+#[test]
+fn vietnamese_dict_typing_variants() {
+    let content = include_str!("data/vietnamese_22k_typing_variants.txt");
+
+    let mut total_words = 0;
+    let mut total_variants = 0;
+    let mut passed_variants = 0;
+    let mut failed_variants = 0;
+    let mut failures: Vec<(String, String, String, String)> = Vec::new(); // (word, variant, expected, actual)
+
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+
+        let parts: Vec<&str> = line.split('\t').collect();
+        if parts.len() != 2 {
+            continue;
+        }
+
+        let expected_word = parts[0];
+        let variants: Vec<&str> = parts[1].split(',').collect();
+        total_words += 1;
+
+        for variant in &variants {
+            total_variants += 1;
+            let input = format!("{} ", variant);
+            let expected = format!("{} ", expected_word);
+
+            let mut e = Engine::new();
+            e.set_method(0); // Telex
+            e.set_modern_tone(false);
+            let actual = type_word(&mut e, &input);
+
+            if actual == expected {
+                passed_variants += 1;
+            } else {
+                failed_variants += 1;
+                if failures.len() < 1000 {
+                    failures.push((
+                        expected_word.to_string(),
+                        variant.to_string(),
+                        expected_word.to_string(),
+                        actual.trim().to_string(),
+                    ));
+                }
+            }
+        }
+    }
+
+    // Print summary
+    let pass_rate = if total_variants > 0 {
+        (passed_variants as f64 / total_variants as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    println!("\n┌─────────────────────────────────────────┐");
+    println!("│ {:^39} │", "TYPING VARIANTS TEST");
+    println!("├─────────────────────────────────────────┤");
+    println!("│ Total words     │ {:>20} │", total_words);
+    println!("│ Total variants  │ {:>20} │", total_variants);
+    println!("│ Passed          │ {:>20} │", passed_variants);
+    println!("│ Failed          │ {:>20} │", failed_variants);
+    println!("│ Pass rate       │ {:>19.2}% │", pass_rate);
+    println!("└─────────────────────────────────────────┘");
+
+    // Write failures to file
+    if let Ok(mut f) = File::create("tests/data/vietnamese_22k_failures.txt") {
+        writeln!(f, "# Vietnamese 22k Typing Variants Failures").ok();
+        writeln!(f, "# Format: WORD \\t VARIANT \\t EXPECTED \\t ACTUAL").ok();
+        writeln!(f, "# Total failures: {}", failures.len()).ok();
+        writeln!(f).ok();
+        for (word, variant, expected, actual) in &failures {
+            writeln!(f, "{}\t{}\t{}\t{}", word, variant, expected, actual).ok();
+        }
+        println!("\nFailures written to: tests/data/vietnamese_22k_failures.txt");
+    }
+
+    // Print sample failures
+    if !failures.is_empty() {
+        println!("\n=== First {} Failures ===", failures.len().min(30));
+        for (word, variant, expected, actual) in failures.iter().take(30) {
+            println!(
+                "  '{}' typed as '{}' → expected '{}', got '{}'",
+                word, variant, expected, actual
+            );
+        }
+    }
+}
+
+// ============================================================
 // UNIT TESTS
 // ============================================================
 
