@@ -5778,7 +5778,7 @@ impl Engine {
 
         // Common English prefixes that suggest intentional revert
         const PREFIXES: &[&str] = &[
-            "dis", "mis", "un", "re", "de", "pre", "anti", "non", "sub", "trans", "con",
+            "dis", "mis", "un", "re", "de", "pre", "per", "anti", "non", "sub", "trans", "con",
         ];
 
         // Common English suffixes
