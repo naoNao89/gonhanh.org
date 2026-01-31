@@ -233,58 +233,55 @@ jobs:
           APP="build/Build/Products/Release/GoNhanh.app"
           ../../scripts/release/dmg.sh "$APP"
 
-      - name: Generate Release Notes
-        id: release_notes
+      - name: Get Tag Message
+        id: tag_message
+        run: |
+          git fetch origin tag ${{ github.ref_name }} --force
+          TAG_MSG=$(git for-each-ref --format='%(contents)' refs/tags/${{ github.ref_name }})
+
+          echo "=== Tag message ==="
+          echo "$TAG_MSG"
+          echo "==================="
+
+          {
+            echo "message<<EOF"
+            echo "$TAG_MSG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Resolve PR Authors in Tag Message
+        if: ${{ steps.tag_message.outputs.message != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          TAG="${{ github.ref_name }}"
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           REPO="${{ github.repository }}"
+          TAG_MSG="${{ steps.tag_message.outputs.message }}"
 
-          # Generate What's Changed from commits
-          echo "## What's Changed" > release_body.md
-          echo "" >> release_body.md
-
+          # Build PR number → GitHub username map
+          declare -A PR_AUTHOR
           if [ -n "$PREV_TAG" ]; then
-            git log $PREV_TAG..HEAD --pretty=format:"* %s by @%an in [\`%h\`](https://github.com/$REPO/commit/%H)" >> release_body.md
-          else
-            git log -20 --pretty=format:"* %s by @%an in [\`%h\`](https://github.com/$REPO/commit/%H)" >> release_body.md
-          fi
-
-          echo "" >> release_body.md
-          echo "" >> release_body.md
-
-          # Generate Contributors
-          echo "## Contributors" >> release_body.md
-          echo "" >> release_body.md
-
-          if [ -n "$PREV_TAG" ]; then
-            # Get unique GitHub usernames from commit emails
-            CONTRIBUTORS=""
-            for email in $(git log $PREV_TAG..HEAD --format='%aE' | sort -u); do
-              username=$(gh api "/search/users?q=$email+in:email" --jq '.items[0].login // empty' 2>/dev/null || true)
-              if [ -n "$username" ] && [ "$username" != "null" ]; then
-                CONTRIBUTORS="$CONTRIBUTORS @$username"
+            PR_NUMS=$(echo "$TAG_MSG" | grep -oE '#[0-9]+' | tr -d '#' | sort -u)
+            for pr in $PR_NUMS; do
+              login=$(gh api "repos/$REPO/pulls/$pr" --jq '.user.login // empty' 2>/dev/null || true)
+              if [ -n "$login" ]; then
+                PR_AUTHOR["$pr"]="$login"
               fi
             done
+          fi
 
-            # Fallback to git author names
-            if [ -z "$CONTRIBUTORS" ]; then
-              CONTRIBUTORS=$(git log $PREV_TAG..HEAD --format='%aN' | sort -u | tr '\n' ', ' | sed 's/, $//')
-            else
-              CONTRIBUTORS=$(echo "$CONTRIBUTORS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/ $//')
+          # Process tag message: append "bởi @username" to lines with (#NNN)
+          while IFS= read -r line; do
+            if [[ "$line" =~ \(#([0-9]+)\) ]]; then
+              pr_num="${BASH_REMATCH[1]}"
+              login="${PR_AUTHOR[$pr_num]:-}"
+              if [ -n "$login" ] && [[ "$line" != *"bởi @"* ]] && [[ "$line" != *"by @"* ]]; then
+                line="$line bởi @$login"
+              fi
             fi
-
-            echo "$CONTRIBUTORS" >> release_body.md
-          fi
-
-          echo "" >> release_body.md
-
-          # Full Changelog link
-          if [ -n "$PREV_TAG" ]; then
-            echo "**Full Changelog**: https://github.com/$REPO/compare/$PREV_TAG...$TAG" >> release_body.md
-          fi
+            echo "$line" >> release_body.md
+          done <<< "$TAG_MSG"
 
           cat release_body.md
 
@@ -292,7 +289,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: platforms/macos/build/*.dmg
-          body_path: release_body.md
+          body_path: ${{ steps.tag_message.outputs.message != '' && 'release_body.md' || '' }}
+          generate_release_notes: ${{ steps.tag_message.outputs.message == '' }}
 
       # ============================================================
       # CLEANUP
