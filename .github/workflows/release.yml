@@ -233,28 +233,66 @@ jobs:
           APP="build/Build/Products/Release/GoNhanh.app"
           ../../scripts/release/dmg.sh "$APP"
 
-      - name: Get Tag Message
-        id: tag_message
+      - name: Generate Release Notes
+        id: release_notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git fetch origin tag ${{ github.ref_name }} --force
-          TAG_MSG=$(git for-each-ref --format='%(contents)' refs/tags/${{ github.ref_name }})
+          TAG="${{ github.ref_name }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          REPO="${{ github.repository }}"
 
-          echo "=== Tag message ==="
-          echo "$TAG_MSG"
-          echo "==================="
+          # Generate What's Changed from commits
+          echo "## What's Changed" > release_body.md
+          echo "" >> release_body.md
 
-          {
-            echo "message<<EOF"
-            echo "$TAG_MSG"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+          if [ -n "$PREV_TAG" ]; then
+            git log $PREV_TAG..HEAD --pretty=format:"* %s by @%an in [\`%h\`](https://github.com/$REPO/commit/%H)" >> release_body.md
+          else
+            git log -20 --pretty=format:"* %s by @%an in [\`%h\`](https://github.com/$REPO/commit/%H)" >> release_body.md
+          fi
+
+          echo "" >> release_body.md
+          echo "" >> release_body.md
+
+          # Generate Contributors
+          echo "## Contributors" >> release_body.md
+          echo "" >> release_body.md
+
+          if [ -n "$PREV_TAG" ]; then
+            # Get unique GitHub usernames from commit emails
+            CONTRIBUTORS=""
+            for email in $(git log $PREV_TAG..HEAD --format='%aE' | sort -u); do
+              username=$(gh api "/search/users?q=$email+in:email" --jq '.items[0].login // empty' 2>/dev/null || true)
+              if [ -n "$username" ] && [ "$username" != "null" ]; then
+                CONTRIBUTORS="$CONTRIBUTORS @$username"
+              fi
+            done
+
+            # Fallback to git author names
+            if [ -z "$CONTRIBUTORS" ]; then
+              CONTRIBUTORS=$(git log $PREV_TAG..HEAD --format='%aN' | sort -u | tr '\n' ', ' | sed 's/, $//')
+            else
+              CONTRIBUTORS=$(echo "$CONTRIBUTORS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/ $//')
+            fi
+
+            echo "$CONTRIBUTORS" >> release_body.md
+          fi
+
+          echo "" >> release_body.md
+
+          # Full Changelog link
+          if [ -n "$PREV_TAG" ]; then
+            echo "**Full Changelog**: https://github.com/$REPO/compare/$PREV_TAG...$TAG" >> release_body.md
+          fi
+
+          cat release_body.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: platforms/macos/build/*.dmg
-          body: ${{ steps.tag_message.outputs.message }}
-          generate_release_notes: ${{ steps.tag_message.outputs.message == '' }}
+          body_path: release_body.md
 
       # ============================================================
       # CLEANUP
