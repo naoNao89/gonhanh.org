@@ -29,6 +29,7 @@ const EXCLUDED_USERS = new Set([
   'codecov[bot]',
   'vercel[bot]',
   'netlify[bot]',
+  'claude',
 ]);
 
 /**
