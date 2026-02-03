@@ -258,15 +258,22 @@ jobs:
           REPO="${{ github.repository }}"
           TAG_MSG="${{ steps.tag_message.outputs.message }}"
 
-          # Process tag message: append "bởi @username" to lines with (#NNN)
+          # Process tag message: append "bởi @username" to lines with #NNN
+          # Matches (#NNN), (Issue #NNN), or bare #NNN anywhere in line
           # Note: query PR author inline (no associative arrays - bash 3.x compat)
           while IFS= read -r line; do
-            if [[ "$line" =~ \(#([0-9]+)\) ]]; then
-              pr_num="${BASH_REMATCH[1]}"
-              login=$(gh api "repos/$REPO/pulls/$pr_num" --jq '.user.login // empty' 2>/dev/null || true)
-              if [ -n "$login" ] && [[ "$line" != *"bởi @"* ]] && [[ "$line" != *"by @"* ]]; then
-                line="$line bởi @$login"
-              fi
+            login=""
+            # Extract all #NNN refs from line, try each as PR (last match = PR ref typically)
+            refs=$(echo "$line" | grep -oE '#[0-9]+' | grep -oE '[0-9]+' || true)
+            if [ -n "$refs" ]; then
+              # Try refs in reverse order (PR ref is usually last, e.g., "(Issue #275) (#285)")
+              for pr_num in $(echo "$refs" | tail -r 2>/dev/null || echo "$refs" | tac 2>/dev/null || echo "$refs"); do
+                login=$(gh api "repos/$REPO/pulls/$pr_num" --jq '.user.login' 2>/dev/null) || login=""
+                if [ -n "$login" ]; then break; fi
+              done
+            fi
+            if [ -n "$login" ] && [[ "$line" != *"bởi @"* ]] && [[ "$line" != *"by @"* ]]; then
+              line="$line bởi @$login"
             fi
             echo "$line" >> release_body.md
           done <<< "$TAG_MSG"
