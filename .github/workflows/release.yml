@@ -253,10 +253,10 @@ jobs:
         if: ${{ steps.tag_message.outputs.message != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_MSG: ${{ steps.tag_message.outputs.message }}
         shell: bash
         run: |
           REPO="${{ github.repository }}"
-          TAG_MSG="${{ steps.tag_message.outputs.message }}"
 
           # Process tag message: append "bởi @username" to lines with #NNN
           # Matches (#NNN), (Issue #NNN), or bare #NNN anywhere in line
