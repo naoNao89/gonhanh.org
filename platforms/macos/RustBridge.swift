@@ -1483,9 +1483,10 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
         return cached(.axDirect, (0, 0, 0), "ax:arc")
     }
 
-    // Firefox-based browsers - use selection method for address bar (AXTextField)
-    // Use slow method for content areas - axDirect causes char deletion on mid-text insert
-    // Issue #160/#192: axDirect deletes chars/newlines when inserting in middle of text
+    // Firefox-based browsers
+    // Zen: axDirect for address bar, slow for content
+    // Others: selection for address bar (AXTextField/AXWindow), slow for content
+    // Issue #160/#192: axDirect causes char deletion on mid-text insert
     let firefoxBrowsers = [
         "org.mozilla.firefox", "org.mozilla.firefoxdeveloperedition", "org.mozilla.nightly",
         "org.waterfoxproject.waterfox", "io.gitlab.librewolf-community.librewolf",
@@ -1494,9 +1495,13 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
     ]
     if firefoxBrowsers.contains(bundleId) {
         if role == "AXTextField" || role == "AXWindow" {
-            return cached(.axDirect, (0, 0, 0), "ax:firefox")  // Address bar
+            if bundleId == "app.zen-browser.zen" {
+                return cached(.axDirect, (0, 0, 0), "ax:zen")
+            } else {
+                return cached(.selection, (0, 0, 0), "sel:firefox")
+            }
         } else {
-            return cached(.slow, (3000, 8000, 3000), "slow:firefox")  // Content area
+            return cached(.slow, (3000, 8000, 3000), "slow:firefox")
         }
     }
 
