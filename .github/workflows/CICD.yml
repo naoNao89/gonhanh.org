@@ -151,6 +151,18 @@ jobs:
       - name: Test (nightly)
         run: cargo test --manifest-path core/Cargo.toml
 
+  test_macos_swift:
+    name: Test/macOS-Swift
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Run Swift Tests
+        run: |
+          cd platforms/macos
+          xcodebuild test -project GoNhanh.xcodeproj -scheme GoNhanh -destination 'platform=macOS' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+
   build:
     permissions:
       contents: write
