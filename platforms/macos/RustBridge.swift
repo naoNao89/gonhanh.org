@@ -75,8 +75,6 @@ let textModifyingKeys: Set<UInt16> = [
     0x09,  // Cmd+V (paste)
     0x07,  // Cmd+X (cut)
     0x06,  // Cmd+Z (undo)
-    0x33,  // Cmd+Backspace (delete line)
-    0x75,  // Cmd+Delete (forward delete line)
 ]
 
 private enum KeyCode {
