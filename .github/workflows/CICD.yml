@@ -167,10 +167,10 @@ jobs:
           cp target/release/libgonhanh_core.a ../platforms/macos/libgonhanh_core.a || \
           cp target/x86_64-apple-darwin/release/libgonhanh_core.a ../platforms/macos/libgonhanh_core.a || \
           cp target/aarch64-apple-darwin/release/libgonhanh_core.a ../platforms/macos/libgonhanh_core.a
+      - name: Install xcbeautify
+        run: brew install xcbeautify
       - name: Run Swift Tests
-        run: |
-          cd platforms/macos
-          xcodebuild test -project GoNhanh.xcodeproj -scheme GoNhanh -destination 'platform=macOS' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+        run: set -o pipefail && cd platforms/macos && env NSUnbufferedIO=YES xcodebuild test -project GoNhanh.xcodeproj -scheme GoNhanh -destination 'platform=macOS' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO | xcbeautify --renderer github-actions
 
   build:
     permissions:
