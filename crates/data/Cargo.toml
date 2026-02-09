@@ -1,0 +1,27 @@
+[package]
+name = "data"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
+description = "Gõ Nhanh - Data structures and Vietnamese language data"
+include = [
+    "src/**/*.rs",
+    "src/**/*.txt",
+    "src/**/*.dic",
+    "Cargo.toml",
+]
+
+[dependencies]
+
+[dev-dependencies]
+rstest.workspace = true
+serial_test.workspace = true
+
+[lib]
+crate-type = ["rlib"]

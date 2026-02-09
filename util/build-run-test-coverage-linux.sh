@@ -25,7 +25,7 @@ REPORT_PATH="${COVERAGE_DIR}/report/total.lcov.info"
 
 mkdir -p "${COVERAGE_DIR}/report"
 
-cd "${REPO_main_dir}/core"
+cd "${REPO_main_dir}"
 
 # Clean previous coverage data
 cargo llvm-cov clean --workspace

@@ -19,7 +19,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Find Rust lib
 RUST=""
-for p in "$LIB/libgonhanh_core.so" "$SRC/../../core/target/release/libgonhanh_core.so" "$SRC/../../core/target/debug/libgonhanh_core.so"; do
+for p in "$LIB/libgonhanh_core.so" "$SRC/../../target/release/libgonhanh_core.so" "$SRC/../../target/debug/libgonhanh_core.so"; do
     [[ -f "$p" ]] && RUST="$p" && break
 done
 

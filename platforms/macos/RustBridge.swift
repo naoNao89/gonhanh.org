@@ -510,7 +510,7 @@ private class TextInjector {
 /// Size: 256 UInt32 chars (1024 bytes) + 4 bytes = 1028 bytes
 /// Max replacement: 255 UTF-32 codepoints (Vietnamese diacritics = 1 each)
 private struct ImeResult {
-    // 256 UInt32 values for UTF-32 codepoints (matches core/src/engine/buffer.rs MAX)
+    // 256 UInt32 values for UTF-32 codepoints (matches crates/engine/src/buffer.rs MAX)
     // 32 lines × 8 values = 256 total
     var chars: (
         UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32,  // 1
@@ -984,10 +984,10 @@ private extension CGEventFlags {
 
     /// Check if only fn key is pressed (no other modifiers)
     var isFnOnly: Bool {
-        contains(.maskSecondaryFn) && 
-        !contains(.maskControl) && 
-        !contains(.maskAlternate) && 
-        !contains(.maskShift) && 
+        contains(.maskSecondaryFn) &&
+        !contains(.maskControl) &&
+        !contains(.maskAlternate) &&
+        !contains(.maskShift) &&
         !contains(.maskCommand)
     }
 }
@@ -1365,7 +1365,7 @@ private func keyboardCallback(
 
     // Extract character ONCE for ALL key processing (layout-independent approach)
     let extractedChar = event.keyboardCharacter()
-    
+
     // Issue #275: Handle Option-modified keys for special character shortcuts
     // When Option is pressed (without Cmd/Ctrl), the key produces a special character
     // (e.g., Option+V → √). Pass this character to engine for shortcut matching.
@@ -1404,7 +1404,7 @@ private func keyboardCallback(
         // Character already processed, pass through
         return Unmanaged.passUnretained(event)
     }
-    
+
     // Fallback for special keys (no character)
     if let (bs, chars, keyConsumed) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: bypassIME, shift: shift) {
         Log.key(keyCode, "bs=\(bs) chars='\(String(chars))' consumed=\(keyConsumed)")

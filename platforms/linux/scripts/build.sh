@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LINUX_DIR="$(dirname "$SCRIPT_DIR")"
 ROOT_DIR="$(dirname "$(dirname "$LINUX_DIR")")"
-CORE_DIR="$ROOT_DIR/core"
+CORE_DIR="$ROOT_DIR"
 BUILD_TYPE="Release"
 
 # Parse arguments
@@ -21,7 +21,7 @@ echo ""
 
 # Step 1: Build Rust core
 echo "=== Step 1: Building Rust core ==="
-cd "$CORE_DIR"
+cd "$ROOT_DIR"
 
 # Detect host target triple for cross-platform support
 HOST_TRIPLE=$(rustc -vV 2>/dev/null | grep 'host:' | awk '{print $2}')
@@ -32,10 +32,10 @@ fi
 echo "Host target: $HOST_TRIPLE"
 
 if [[ "$BUILD_TYPE" == "Debug" ]]; then
-    cargo build
+    cargo build -p ffi
     RUST_TARGET_DIR="target/debug"
 else
-    cargo build --release
+    cargo build --release -p ffi
     RUST_TARGET_DIR="target/release"
 fi
 
