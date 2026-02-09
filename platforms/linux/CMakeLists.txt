@@ -10,13 +10,13 @@ pkg_check_modules(Fcitx5Core REQUIRED IMPORTED_TARGET Fcitx5Core)
 pkg_check_modules(Fcitx5Module REQUIRED IMPORTED_TARGET Fcitx5Module)
 
 # Rust core library path
-set(RUST_LIB_DIR "${CMAKE_SOURCE_DIR}/../../core/target/release")
+set(RUST_LIB_DIR "${CMAKE_SOURCE_DIR}/../../target/release")
 set(RUST_LIB_NAME "gonhanh_core")
 
 # Check if Rust library exists
 if(NOT EXISTS "${RUST_LIB_DIR}/lib${RUST_LIB_NAME}.so")
     message(WARNING "Rust library not found at ${RUST_LIB_DIR}/lib${RUST_LIB_NAME}.so")
-    message(WARNING "Build it first: cd ../../core && cargo build --release")
+    message(WARNING "Build it first: cd ../.. && cargo build --release -p ffi")
 endif()
 
 # Sources (KeycodeMap.h is header-only)

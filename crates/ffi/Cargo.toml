@@ -1,0 +1,25 @@
+[package]
+name = "ffi"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
+description = "Gõ Nhanh - FFI bindings for platform integration"
+
+[dependencies]
+data = { path = "../data" }
+engine = { path = "../engine" }
+updater = { path = "../updater" }
+
+[dev-dependencies]
+rstest.workspace = true
+serial_test.workspace = true
+
+[lib]
+name = "gonhanh_core"
+crate-type = ["staticlib", "cdylib", "rlib"]

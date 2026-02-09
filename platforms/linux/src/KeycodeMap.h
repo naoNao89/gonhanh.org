@@ -5,11 +5,11 @@
 #include <xkbcommon/xkbcommon-keysyms.h>
 
 // Map X11/Wayland keysym to macOS virtual keycode
-// Reference: core/src/data/keys.rs for macOS keycodes
+// Reference: crates/data/src/keys.rs for macOS keycodes
 
 namespace KeycodeMap {
 
-// macOS virtual keycodes (from core/src/data/keys.rs)
+// macOS virtual keycodes (from crates/data/src/keys.rs)
 namespace MacKey {
     constexpr uint16_t A = 0;
     constexpr uint16_t S = 1;

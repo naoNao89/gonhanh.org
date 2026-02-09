@@ -53,23 +53,23 @@ help:
 all: test build
 
 test:
-	@cd core && cargo test
-	@./scripts/test/dict.sh
+	@cargo test --workspace
+	@./util/test-dict.sh
 
 format:
-	@cd core && cargo fmt && cargo clippy -- -D warnings
+	@cargo fmt --all && cargo clippy --workspace -- -D warnings
 
 build: format ## Build core + macos app
-	@./scripts/build/core.sh
-	@./scripts/build/macos.sh
-	@./scripts/build/windows.sh
+	@./util/build-core.sh
+	@./util/build-macos.sh
+	@./util/build-windows.sh
 	@open platforms/macos/build/Release/GoNhanh.app
 
 build-linux: format
 	@cd platforms/linux && ./scripts/build.sh
 
 clean: ## Clean build + settings
-	@cd core && cargo clean
+	@cargo clean
 	@rm -rf platforms/macos/build
 	@rm -rf platforms/linux/build
 	@defaults delete org.gonhanh.GoNhanh 2>/dev/null || true
@@ -86,14 +86,14 @@ watch:
 	@tail -f /tmp/gonhanh_debug.log
 
 test-22k: ## Run heavy 22k tests + generate typing orders
-	@cd core && cargo test -- --ignored --nocapture
+	@cargo test --workspace -- --ignored --nocapture
 
 test-100k: ## Run English 100k tests
-	@cd core && cargo test --test english_100k_test -- --nocapture
-	@cd core && cargo test --test english_telex_patterns_test -- --nocapture
+	@cargo test --workspace --test english_100k_test -- --nocapture
+	@cargo test --workspace --test english_telex_patterns_test -- --nocapture
 
 test-dict: ## Run dictionary tests (VN: 100%, EN: 97%)
-	@./scripts/test/dict.sh
+	@./util/test-dict.sh
 
 perf:
 	@PID=$$(pgrep -f "GoNhanh.app" | head -1); \
@@ -110,14 +110,14 @@ perf:
 
 .PHONY: setup install dmg
 setup: ## Setup dev environment
-	@./scripts/setup/macos.sh
+	@./util/setup-macos.sh
 
 install: build
 	@cp -r platforms/macos/build/Release/GoNhanh.app /Applications/
 
 dmg: build ## Create DMG installer
-	@./scripts/release/dmg-background.sh
-	@./scripts/release/dmg.sh
+	@./util/release-dmg-background.sh
+	@./util/release-dmg.sh
 
 # ============================================================================
 # Release (auto-versioning from git tags)
@@ -129,7 +129,7 @@ release: ## Patch release (1.0.9 → 1.0.10)
 	@git pull --rebase origin main --tags
 	@echo "$(TAG) → v$(NEXT_PATCH)"
 	@git add -A && git commit -m "release: v$(NEXT_PATCH)" --allow-empty
-	@./scripts/release/notes.sh v$(NEXT_PATCH) > /tmp/release_notes.md
+	@./util/release-notes.sh v$(NEXT_PATCH) > /tmp/release_notes.md
 	@git tag -a v$(NEXT_PATCH) -F /tmp/release_notes.md --cleanup=verbatim
 	@git push origin main v$(NEXT_PATCH)
 	@echo "→ https://github.com/khaphanspace/gonhanh.org/releases"
@@ -138,7 +138,7 @@ release-minor: ## Minor release (1.0.9 → 1.1.0)
 	@git pull --rebase origin main --tags
 	@echo "$(TAG) → v$(NEXT_MINOR)"
 	@git add -A && git commit -m "release: v$(NEXT_MINOR)" --allow-empty
-	@./scripts/release/notes.sh v$(NEXT_MINOR) > /tmp/release_notes.md
+	@./util/release-notes.sh v$(NEXT_MINOR) > /tmp/release_notes.md
 	@git tag -a v$(NEXT_MINOR) -F /tmp/release_notes.md --cleanup=verbatim
 	@git push origin main v$(NEXT_MINOR)
 	@echo "→ https://github.com/khaphanspace/gonhanh.org/releases"
@@ -147,7 +147,7 @@ release-major: ## Major release (1.0.9 → 2.0.0)
 	@git pull --rebase origin main --tags
 	@echo "$(TAG) → v$(NEXT_MAJOR)"
 	@git add -A && git commit -m "release: v$(NEXT_MAJOR)" --allow-empty
-	@./scripts/release/notes.sh v$(NEXT_MAJOR) > /tmp/release_notes.md
+	@./util/release-notes.sh v$(NEXT_MAJOR) > /tmp/release_notes.md
 	@git tag -a v$(NEXT_MAJOR) -F /tmp/release_notes.md --cleanup=verbatim
 	@git push origin main v$(NEXT_MAJOR)
 	@echo "→ https://github.com/khaphanspace/gonhanh.org/releases"
