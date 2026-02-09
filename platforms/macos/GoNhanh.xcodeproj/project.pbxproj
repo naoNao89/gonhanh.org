@@ -27,6 +27,7 @@
 		B1000001000000000000002 /* LaunchAtLoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000002 /* LaunchAtLoginTests.swift */; };
 		B1000001000000000000003 /* SoundManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000003 /* SoundManagerTests.swift */; };
 		B1000001000000000000004 /* TextModifyingKeysTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000004 /* TextModifyingKeysTest.swift */; };
+		B1000001000000000000005 /* LogSecurityTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000005 /* LogSecurityTest.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +63,7 @@
 		B1000002000000000000002 /* LaunchAtLoginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginTests.swift; sourceTree = "<group>"; };
 		B1000002000000000000003 /* SoundManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManagerTests.swift; sourceTree = "<group>"; };
 		B1000002000000000000004 /* TextModifyingKeysTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextModifyingKeysTest.swift; sourceTree = "<group>"; };
+		B1000002000000000000005 /* LogSecurityTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogSecurityTest.swift; sourceTree = "<group>"; };
 		B1000003000000000000002 /* GoNhanhTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GoNhanhTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -125,6 +127,7 @@
 				B1000002000000000000002 /* LaunchAtLoginTests.swift */,
 				B1000002000000000000003 /* SoundManagerTests.swift */,
 				B1000002000000000000004 /* TextModifyingKeysTest.swift */,
+				B1000002000000000000005 /* LogSecurityTest.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -253,6 +256,7 @@
 				B1000001000000000000002 /* LaunchAtLoginTests.swift in Sources */,
 				B1000001000000000000003 /* SoundManagerTests.swift in Sources */,
 				B1000001000000000000004 /* TextModifyingKeysTest.swift in Sources */,
+				B1000001000000000000005 /* LogSecurityTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
