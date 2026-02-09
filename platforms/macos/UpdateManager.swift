@@ -161,10 +161,31 @@ class UpdateManager: NSObject, ObservableObject {
             return .failure(error: "File cài đặt bị lỗi.")
         }
 
-        // Copy to temp location
-        let tempApp = "/tmp/GoNhanh-update.app"
-        shell("rm -rf '\(tempApp)'")
-        guard shell("cp -R '\(sourceApp)' '\(tempApp)'").ok else {
+        // Copy to secure temp location — following fcitx5 mkstemp/safeSave pattern:
+        // - Unpredictable path via FileManager (like mkstemp _XXXXXX suffix)
+        // - User-private directory (not world-readable /tmp)
+        // - FileManager APIs instead of shell() to avoid TOCTOU race
+        let fm = FileManager.default
+        let tempDir: URL
+        do {
+            tempDir = try fm.url(
+                for: .itemReplacementDirectory,
+                in: .userDomainMask,
+                appropriateFor: URL(fileURLWithPath: "/Applications"),
+                create: true
+            )
+        } catch {
+            shell("hdiutil detach '\(mountPoint)' -force")
+            return .failure(error: "Không thể tạo thư mục tạm.")
+        }
+
+        let tempApp = tempDir.appendingPathComponent("GoNhanh-update.app").path
+        do {
+            if fm.fileExists(atPath: tempApp) {
+                try fm.removeItem(atPath: tempApp)
+            }
+            try fm.copyItem(atPath: sourceApp, toPath: tempApp)
+        } catch {
             shell("hdiutil detach '\(mountPoint)' -force")
             return .failure(error: "Không thể chuẩn bị cài đặt.")
         }

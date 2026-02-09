@@ -1,23 +1,71 @@
 import Foundation
 import Carbon
 import AppKit
+import os
 
 // MARK: - Debug Logging
 
-/// Debug logging - only active when /tmp/gonhanh_debug.log exists
-/// Enable: touch /tmp/gonhanh_debug.log | Disable: rm /tmp/gonhanh_debug.log
-/// PERFORMANCE: isEnabled cached, @autoclosure defers string formatting until needed
+#if DEBUG
+/// Debug logging — secure implementation following fcitx5 standardpath patterns.
+///
+/// Architecture follows Alamofire's EventMonitor pattern:
+/// - Async DispatchQueue for writes (avoids blocking key handler thread)
+/// - Protocol-like separation: Log methods are no-ops in release builds
+///
+/// Security hardening (CVE fix):
+/// - Log path: ~/Library/Logs/GoNhanh/ (user-private, not world-readable /tmp)
+/// - File permissions: 0600 (owner-only read/write, like fcitx5 O_EXCL|O_RDWR 0600)
+/// - Ownership check: refuses to write if log file owner ≠ current user
+/// - Keystroke content: NEVER logged — only key codes (no chars, no composed text)
+/// - Compile-time guard: entire Log implementation stripped from release builds
+///   (follows ibus-gokien's debug! macro pattern — zero-cost in production)
+///
+/// Enable: mkdir -p ~/Library/Logs/GoNhanh && touch ~/Library/Logs/GoNhanh/debug.log
+/// Disable: rm ~/Library/Logs/GoNhanh/debug.log
+/// PERFORMANCE: isEnabled cached, @autoclosure defers string formatting until needed,
+///              writes dispatched to background queue (Alamofire EventMonitor pattern)
 private enum Log {
-    private static let logPath = "/tmp/gonhanh_debug.log"
+    private static let logDir: String = {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return "\(home)/Library/Logs/GoNhanh"
+    }()
+    private static let logPath: String = {
+        return "\(logDir)/debug.log"
+    }()
     private static var _enabled: Bool?
     private static var perfTimer: Timer?
     private static var keystrokeCount: UInt64 = 0
 
+    /// Dedicated serial queue for async file writes (Alamofire EventMonitor pattern).
+    /// Prevents blocking the key handler thread during I/O.
+    private static let writeQueue = DispatchQueue(label: "org.gonhanh.log", qos: .utility)
+
+    /// Apple's unified logging (os_log) — system-managed, sandboxed, no file I/O needed.
+    /// Visible in Console.app under subsystem "org.gonhanh.ime".
+    private static let osLog = Logger(subsystem: "org.gonhanh.ime", category: "debug")
+
     static var isEnabled: Bool {
         if let cached = _enabled { return cached }
-        _enabled = FileManager.default.fileExists(atPath: logPath)
+        _enabled = isLogFileSecure()
         if _enabled == true { startPerfLogging() }
         return _enabled!
+    }
+
+    /// Verify log file exists, is owned by current user, and has safe permissions.
+    /// Follows fcitx5 pattern: user-private paths with restrictive permissions.
+    private static func isLogFileSecure() -> Bool {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: logPath) else { return false }
+        guard let attrs = try? fm.attributesOfItem(atPath: logPath),
+              let ownerID = attrs[.ownerAccountID] as? NSNumber else { return false }
+        // Refuse to write if file is not owned by current user (prevents cross-user attack)
+        guard ownerID.uint32Value == getuid() else { return false }
+        // Ensure file permissions are 0600 (owner-only); fix if not
+        let posix = (attrs[.posixPermissions] as? NSNumber)?.int16Value ?? 0
+        if posix != 0o600 {
+            chmod(logPath, 0o600)
+        }
+        return true
     }
 
     /// Call to refresh enabled state (e.g., on app activation)
@@ -27,14 +75,24 @@ private enum Log {
     static func countKey() { keystrokeCount += 1 }
 
     private static func write(_ msg: @autoclosure () -> String) {
-        guard isEnabled, let handle = FileHandle(forWritingAtPath: logPath) else { return }
+        guard isEnabled else { return }
+        let message = msg()
         let now = CFAbsoluteTimeGetCurrent()
         let secs = Int(now) % 86400
         let ms = Int((now - floor(now)) * 1000)
         let ts = String(format: "%02d:%02d:%02d.%03d", secs / 3600, (secs / 60) % 60, secs % 60, ms)
-        handle.seekToEndOfFile()
-        handle.write("[\(ts)] \(msg())\n".data(using: .utf8)!)
-        handle.closeFile()
+        let line = "[\(ts)] \(message)\n"
+
+        // Also emit to Apple's unified logging (visible in Console.app)
+        osLog.debug("\(message, privacy: .public)")
+
+        // Async file write — dispatched to background queue (Alamofire pattern)
+        writeQueue.async {
+            guard let handle = FileHandle(forWritingAtPath: logPath) else { return }
+            handle.seekToEndOfFile()
+            handle.write(line.data(using: .utf8)!)
+            handle.closeFile()
+        }
     }
 
     /// Start periodic performance logging (every 5 min)
@@ -44,7 +102,7 @@ private enum Log {
         perfTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { _ in logPerf() }
     }
 
-    /// Log memory/thread stats
+    /// Log memory/thread stats (no keystroke content — only aggregate count)
     private static func logPerf() {
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
@@ -59,11 +117,24 @@ private enum Log {
         }
     }
 
-    static func key(_ code: UInt16, _ result: @autoclosure () -> String) { guard isEnabled else { return }; countKey(); write("K:\(code) → \(result())") }
+    /// Log key event — SECURITY: only key code, NEVER character content
+    static func key(_ code: UInt16, _ result: @autoclosure () -> String) { guard isEnabled else { return }; countKey(); write("K:\(code)") }
     static func method(_ name: @autoclosure () -> String) { guard isEnabled else { return }; write("M: \(name())") }
     static func info(_ msg: @autoclosure () -> String) { guard isEnabled else { return }; write("I: \(msg())") }
     static func queue(_ msg: @autoclosure () -> String) { guard isEnabled else { return }; write("Q: \(msg())") }
 }
+#else
+/// Release build: all Log methods are no-ops — zero overhead, zero logging code.
+/// Follows ibus-gokien's debug! macro pattern: compile-time elimination.
+private enum Log {
+    static var isEnabled: Bool { false }
+    static func refresh() {}
+    @inlinable static func key(_ code: UInt16, _ result: @autoclosure () -> String) {}
+    @inlinable static func method(_ name: @autoclosure () -> String) {}
+    @inlinable static func info(_ msg: @autoclosure () -> String) {}
+    @inlinable static func queue(_ msg: @autoclosure () -> String) {}
+}
+#endif
 
 // MARK: - Constants
 
@@ -1052,7 +1123,7 @@ private func triggerRestoreShortcut(flags: CGEventFlags, proxy: CGEventTapProxy)
     let ctrl = flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate)
     let (method, delays) = detectMethod()
     if let (bs, chars, _) = RustBridge.processKey(keyCode: UInt16(KeyCode.esc), caps: caps, ctrl: ctrl, shift: shift) {
-        Log.key(UInt16(KeyCode.esc), "restore: bs=\(bs) chars='\(String(chars))'")
+        Log.key(UInt16(KeyCode.esc), "restore: bs=\(bs)")
         sendReplacement(backspace: bs, chars: chars, method: method, delays: delays, proxy: proxy)
     }
     TextInjector.shared.clearSessionBuffer()
@@ -1191,13 +1262,7 @@ private func keyboardCallback(
     let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
 
     // Log all keystrokes (only when debug enabled - no overhead otherwise)
-    if Log.isEnabled {
-        if let char = event.keyboardCharacter() {
-            Log.info("keyDown: code=\(keyCode) char='\(char)'")
-        } else {
-            Log.info("keyDown: code=\(keyCode)")
-        }
-    }
+    Log.info("keyDown: code=\(keyCode)")
 
     // Custom shortcut to toggle Vietnamese (default: Ctrl+Space)
     if matchesToggleShortcut(keyCode: keyCode, flags: flags) {
@@ -1221,7 +1286,7 @@ private func keyboardCallback(
         let (method, delays) = detectMethod()
 
         if let (bs, chars, keyConsumed) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: bypassIME, shift: shift) {
-            Log.key(keyCode, "enter: bs=\(bs) chars='\(String(chars))' consumed=\(keyConsumed)")
+            Log.key(keyCode, "enter: bs=\(bs) consumed=\(keyConsumed)")
             sendReplacement(backspace: bs, chars: chars, method: method, delays: delays, proxy: proxy)
 
             if bs > 0 || !chars.isEmpty {
@@ -1329,7 +1394,7 @@ private func keyboardCallback(
 
         // First try Rust engine (handles immediate backspace-after-space)
         if let (bs, chars, _) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: bypassIME, shift: shift) {
-            Log.key(keyCode, "backspace: bs=\(bs) chars='\(String(chars))'")
+            Log.key(keyCode, "backspace: bs=\(bs)")
             sendReplacement(backspace: bs, chars: chars, method: method, delays: delays, proxy: proxy)
             return nil
         }
@@ -1375,7 +1440,7 @@ private func keyboardCallback(
             if let (bs, chars, keyConsumed) = RustBridge.processKey(
                 keyCode: keyCode, caps: caps, ctrl: false, shift: shift, char: char
             ) {
-                Log.key(keyCode, "option: bs=\(bs) chars='\(String(chars))' char='\(char)' consumed=\(keyConsumed)")
+                Log.key(keyCode, "option: bs=\(bs) consumed=\(keyConsumed)")
                 sendReplacement(backspace: bs, chars: chars, method: method, delays: delays, proxy: proxy)
                 return nil  // Consume the event when shortcut matches
             }
@@ -1389,7 +1454,7 @@ private func keyboardCallback(
         if let (bs, chars, keyConsumed) = RustBridge.processKey(
             keyCode: keyCode, caps: caps, ctrl: bypassIME, shift: shift, char: char
         ) {
-            Log.key(keyCode, "bs=\(bs) chars='\(String(chars))' char='\(char)' consumed=\(keyConsumed)")
+            Log.key(keyCode, "bs=\(bs) consumed=\(keyConsumed)")
             sendReplacement(backspace: bs, chars: chars, method: method, delays: delays, proxy: proxy)
 
             // Break keys (punctuation, not space): pass through or post synthetically
@@ -1407,7 +1472,7 @@ private func keyboardCallback(
 
     // Fallback for special keys (no character)
     if let (bs, chars, keyConsumed) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: bypassIME, shift: shift) {
-        Log.key(keyCode, "bs=\(bs) chars='\(String(chars))' consumed=\(keyConsumed)")
+        Log.key(keyCode, "bs=\(bs) consumed=\(keyConsumed)")
         sendReplacement(backspace: bs, chars: chars, method: method, delays: delays, proxy: proxy)
 
         // Break keys (punctuation, not space): pass through or post synthetically
@@ -1697,7 +1762,7 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
 
 private func sendReplacement(backspace bs: Int, chars: [Character], method: InjectionMethod, delays: (UInt32, UInt32, UInt32), proxy: CGEventTapProxy) {
     let str = String(chars)
-    Log.info("inject: bs=\(bs) text='\(str)' method=\(method) delays=\(delays)")
+    Log.info("inject: bs=\(bs) len=\(str.count) method=\(method) delays=\(delays)")
 
     // Use TextInjector for synchronized text injection
     TextInjector.shared.injectSync(bs: bs, text: str, method: method, delays: delays, proxy: proxy)
