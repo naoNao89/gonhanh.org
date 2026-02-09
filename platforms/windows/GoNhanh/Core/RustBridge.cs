@@ -5,7 +5,7 @@ namespace GoNhanh.Core;
 
 /// <summary>
 /// P/Invoke bridge to Rust core library (gonhanh_core.dll)
-/// FFI contract matches core/src/lib.rs exports
+/// FFI contract matches crates/ffi/src/lib.rs exports
 /// </summary>
 public static class RustBridge
 {
@@ -123,7 +123,7 @@ public enum ImeAction : byte
 }
 
 /// <summary>
-/// Native result structure from Rust (must match core/src/lib.rs)
+/// Native result structure from Rust (must match crates/ffi/src/lib.rs)
 /// Size: 256 UInt32 chars (1024 bytes) + 4 bytes = 1028 bytes
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]

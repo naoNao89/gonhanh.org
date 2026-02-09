@@ -231,7 +231,7 @@ jobs:
         run: |
           cd platforms/macos
           APP="build/Build/Products/Release/GoNhanh.app"
-          ../../scripts/release/dmg.sh "$APP"
+          ../../util/release-dmg.sh "$APP"
 
       - name: Get Tag Message
         id: tag_message
@@ -365,7 +365,7 @@ jobs:
         if: ${{ env.stapled == 'true' }}
         run: |
           mkdir -p platforms/macos/build
-          ./scripts/release/dmg.sh "GoNhanh.app"
+          ./util/release-dmg.sh "GoNhanh.app"
 
       - name: Update Release with Stapled DMG
         if: ${{ env.stapled == 'true' }}
@@ -428,7 +428,7 @@ jobs:
           mkdir -p "$PKG/lib" "$PKG/share/fcitx5/addon" "$PKG/share/fcitx5/inputmethod"
 
           cp platforms/linux/build/gonhanh.so "$PKG/lib/"
-          cp core/target/release/libgonhanh_core.so "$PKG/lib/"
+          cp target/release/libgonhanh_core.so "$PKG/lib/"
           cp platforms/linux/data/gonhanh-addon.conf "$PKG/share/fcitx5/addon/gonhanh.conf"
           cp platforms/linux/data/gonhanh.conf "$PKG/share/fcitx5/inputmethod/"
           cp platforms/linux/README.md "$PKG/"

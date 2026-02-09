@@ -44,7 +44,7 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt
-      - run: cargo fmt --manifest-path core/Cargo.toml -- --check
+      - run: cargo fmt --all -- --check
 
   style_lint:
     name: Style/clippy
@@ -63,10 +63,10 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: core
+          workspaces: .
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
-      - run: cargo clippy --manifest-path core/Cargo.toml -- -D warnings
+      - run: cargo clippy --workspace -- -D warnings
 
   doc_warnings:
     name: Documentation/warnings
@@ -84,11 +84,11 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: core
+          workspaces: .
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
       - name: "`cargo doc` with warnings"
-        run: RUSTDOCFLAGS="-Dwarnings" cargo doc --manifest-path core/Cargo.toml --no-deps --document-private-items
+        run: RUSTDOCFLAGS="-Dwarnings" cargo doc --workspace --no-deps --document-private-items
 
   min_version:
     name: MinRustV (MSRV)
@@ -106,13 +106,13 @@ jobs:
           toolchain: ${{ env.RUST_MIN_SRV }}
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: core
+          workspaces: .
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
       - name: Build with MSRV
-        run: cargo build --manifest-path core/Cargo.toml
+        run: cargo build --workspace
       - name: Test with MSRV
-        run: cargo test --manifest-path core/Cargo.toml
+        run: cargo test --workspace
 
   test_stable:
     name: Test/stable
@@ -134,11 +134,11 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: core
+          workspaces: .
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
       - name: Test
-        run: cargo test --manifest-path core/Cargo.toml
+        run: cargo test --workspace
 
   test_nightly:
     name: Test/nightly
@@ -156,11 +156,11 @@ jobs:
           toolchain: nightly
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: core
+          workspaces: .
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
       - name: Test (nightly)
-        run: cargo test --manifest-path core/Cargo.toml
+        run: cargo test --workspace
 
   test_macos_swift:
     name: Test/macOS-Swift
@@ -223,7 +223,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: "${{ matrix.job.os }}_${{ matrix.job.target }}"
-          workspaces: core
+          workspaces: .
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
       - name: Initialize workflow variables
@@ -265,14 +265,14 @@ jobs:
         shell: bash
         run: |
           ## Build
-          ${{ steps.vars.outputs.CARGO_CMD }} build --manifest-path core/Cargo.toml --release \
+          ${{ steps.vars.outputs.CARGO_CMD }} build --release -p ffi \
             --target=${{ matrix.job.target }}
       - name: Test
         if: matrix.job.skip-tests != true
         shell: bash
         run: |
           ## Test
-          ${{ steps.vars.outputs.CARGO_CMD }} test --manifest-path core/Cargo.toml \
+          ${{ steps.vars.outputs.CARGO_CMD }} test --workspace \
             --target=${{ matrix.job.target }}
         env:
           RUST_BACKTRACE: "1"
@@ -280,7 +280,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PROJECT_NAME }}-core-${{ matrix.job.target }}
-          path: core/target/${{ matrix.job.target }}/release/*gonhanh*${{ steps.vars.outputs.EXE_suffix }}
+          path: target/${{ matrix.job.target }}/release/*gonhanh*${{ steps.vars.outputs.EXE_suffix }}
 
   build_linux_platform:
     name: Build/linux-fcitx5
@@ -299,7 +299,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: "fcitx5"
-          workspaces: core
+          workspaces: .
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
       - name: Install Fcitx5 dependencies
@@ -318,7 +318,7 @@ jobs:
             cmake \
             pkg-config
       - name: Build Rust core
-        run: cargo build --manifest-path core/Cargo.toml --release
+        run: cargo build --release -p ffi
       - name: Build Fcitx5 addon
         run: |
           cd platforms/linux
@@ -329,7 +329,7 @@ jobs:
         run: |
           cd platforms/linux/build
           ./keycodemap_test --gtest_color=yes
-          LD_LIBRARY_PATH="${GITHUB_WORKSPACE}/core/target/release:$LD_LIBRARY_PATH" \
+          LD_LIBRARY_PATH="${GITHUB_WORKSPACE}/target/release:$LD_LIBRARY_PATH" \
             ./rustbridge_test --gtest_color=yes
 
   coverage:
@@ -351,7 +351,7 @@ jobs:
           tool: cargo-llvm-cov,nextest
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: core
+          workspaces: .
       - name: Run test and coverage
         shell: bash
         run: |

@@ -84,19 +84,15 @@ gonhanh.org/
 │   └── windows/
 │       └── .keep               # Windows stub (future)
 │
-├── scripts/                     # Build automation
-│   ├── build/                  # Build scripts
-│   │   ├── core.sh             # Build Rust library
-│   │   ├── macos.sh            # Build SwiftUI app
-│   │   └── windows.sh          # Build Windows app
-│   ├── setup/                  # Setup scripts
-│   │   ├── macos.sh            # macOS dev setup
-│   │   └── windows.ps1         # Windows dev setup
-│   ├── release/                # Release scripts
-│   │   ├── dmg.sh              # Create DMG installer
-│   │   └── notes.sh            # Generate release notes
-│   └── test/                   # Test scripts
-│       └── benchmark.sh        # CPU benchmark
+├── util/                         # Build automation & utility scripts
+│   ├── build-core.sh            # Build Rust library
+│   ├── build-macos.sh           # Build SwiftUI app
+│   ├── build-windows.sh         # Build Windows app
+│   ├── setup-macos.sh           # macOS dev setup
+│   ├── setup-windows.ps1        # Windows dev setup
+│   ├── release-dmg.sh           # Create DMG installer
+│   ├── release-notes.sh         # Generate release notes
+│   └── test-benchmark.sh        # CPU benchmark
 │
 └── docs/                        # Documentation
     ├── architecture.md         # System architecture & design
@@ -474,7 +470,7 @@ chore: update dependencies
 | "No such file or directory: libgonhanh_core.a" | Run `make core` first                                      |
 | "Failed to find Xcode"                         | Install Xcode from App Store, run `xcode-select --install` |
 | "Rust target not found"                        | Run `make setup` to install targets                        |
-| "Permission denied" on scripts                 | Run `chmod +x scripts/**/*.sh`                             |
+| "Permission denied" on scripts                 | Run `chmod +x util/*.sh`                                   |
 
 ### Test Issues
 

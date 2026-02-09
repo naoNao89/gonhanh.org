@@ -175,7 +175,7 @@ jobs:
           V="${{ steps.version.outputs.version }}"
 
           # Create DMG (version already set, app already signed)
-          ../../scripts/release/dmg.sh "$APP" || {
+          ../../util/release-dmg.sh "$APP" || {
             # Fallback: simple DMG if script fails
             hdiutil create -volname "GoNhanh" -srcfolder "$APP" -ov -format UDZO "build/GoNhanh-${V}.dmg"
           }
@@ -221,7 +221,7 @@ jobs:
             pkg-config
 
       - name: Build Rust core
-        run: cargo build --manifest-path core/Cargo.toml --release
+        run: cargo build --release -p ffi
 
       - name: Build Fcitx5 addon
         run: |
@@ -249,7 +249,7 @@ jobs:
           mkdir -p dist
           cp build/src/libgonhanh.so dist/
           cp -r data/* dist/
-          cp ../../core/target/release/libgonhanh_core.so dist/ || true
+          cp ../../target/release/libgonhanh_core.so dist/ || true
           tar -czvf "gonhanh-${V}-linux.tar.gz" -C dist .
 
       - name: Upload Linux artifact
