@@ -94,11 +94,16 @@ gonhanh.org/
 │       │   └── install.sh        # User-local installation script
 │       └── libgonhanh_core.so    # Compiled Rust shared library (x86_64)
 │
-├── scripts/                     # Build automation
-│   ├── build/                  # Build scripts (core.sh, macos.sh, windows.sh)
-│   ├── setup/                  # Setup scripts (macos.sh, windows.ps1, linux.sh)
-│   ├── release/                # Release (dmg.sh, notes.sh, contributors.js)
-│   └── test/                   # Test scripts (benchmark.sh, typing.swift)
+├── util/                         # Build automation & utility scripts
+│   ├── build-core.sh            # Build Rust library
+│   ├── build-macos.sh           # Build macOS app
+│   ├── build-windows.sh         # Build Windows app
+│   ├── setup-macos.sh           # macOS dev setup
+│   ├── setup-linux.sh           # Linux installer
+│   ├── release-dmg.sh           # Create DMG installer
+│   ├── release-notes.sh         # Generate release notes
+│   ├── release-contributors.js  # Generate CONTRIBUTORS.md
+│   └── test-benchmark.sh        # CPU benchmark
 │
 ├── Makefile                    # Main build targets
 ├── .github/workflows/          # CI/CD automation

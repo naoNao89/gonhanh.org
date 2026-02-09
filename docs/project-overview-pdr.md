@@ -140,7 +140,7 @@ User Keystroke (CGEventTap/SetWindowsHookEx)
 ### Code Organization
 - **Core** (`core/src/`): Rust engine, pure logic, zero platform dependencies
 - **Platform** (`platforms/macos/`): SwiftUI UI, platform integration, FFI bridge
-- **Scripts** (`scripts/`): Build automation for universal binaries
+- **Util** (`util/`): Build automation scripts for universal binaries
 - **Tests** (`core/tests/`): Integration tests + unit tests
 
 ### Quality Gates

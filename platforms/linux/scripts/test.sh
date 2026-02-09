@@ -7,15 +7,15 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LINUX_DIR="$(dirname "$SCRIPT_DIR")"
 ROOT_DIR="$(dirname "$(dirname "$LINUX_DIR")")"
-CORE_DIR="$ROOT_DIR/core"
+CORE_DIR="$ROOT_DIR"
 
 echo "=== Running Gõ Nhanh Linux Tests ==="
 echo ""
 
 # Step 1: Build Rust core (required for RustBridge tests)
 echo "=== Step 1: Building Rust core ==="
-cd "$CORE_DIR"
-cargo build --release
+cd "$ROOT_DIR"
+cargo build --release -p ffi
 echo ""
 
 # Step 2: Build C++ tests
@@ -47,7 +47,7 @@ echo "--- KeycodeMap Tests ---"
 if [[ -f "rustbridge_test" ]]; then
     echo ""
     echo "--- RustBridge Tests ---"
-    LD_LIBRARY_PATH="$CORE_DIR/target/release:$LD_LIBRARY_PATH" ./rustbridge_test --gtest_color=yes
+    LD_LIBRARY_PATH="$ROOT_DIR/target/release:$LD_LIBRARY_PATH" ./rustbridge_test --gtest_color=yes
 else
     echo "Warning: RustBridge tests not built (Rust library may be missing)"
 fi

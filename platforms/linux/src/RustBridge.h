@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// FFI Result structure - must match core/src/engine/mod.rs
+// FFI Result structure - must match crates/engine/src/engine.rs
 // #[repr(C)]
 // pub struct Result {
 //     pub chars: [u32; 32],
@@ -42,7 +42,7 @@ enum class InputMethod : uint8_t {
     VNI = 1
 };
 
-// FFI function declarations (from core/src/lib.rs)
+// FFI function declarations (from crates/ffi/src/lib.rs)
 extern "C" {
     void ime_init();
     ImeResult* ime_key_ext(uint16_t key, bool caps, bool ctrl, bool shift);

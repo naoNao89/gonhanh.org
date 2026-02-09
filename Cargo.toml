@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/data",
+    "crates/engine",
+    "crates/updater",
+    "crates/ffi",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Kha Phan <nhatkha1407@gmail.com>"]
+license = "BSD-3-Clause"
+repository = "https://github.com/khaphanspace/gonhanh.org"
+homepage = "https://gonhanh.org"
+keywords = ["vietnamese", "input-method", "ime", "typing", "diacritics"]
+categories = ["internationalization", "text-processing"]
+rust-version = "1.80"
+
+[workspace.dependencies]
+rstest = "0.18"
+serial_test = "3.0"
