@@ -29,6 +29,7 @@
 		B1000001000000000000004 /* TextModifyingKeysTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000004 /* TextModifyingKeysTest.swift */; };
 		B1000001000000000000005 /* LogSecurityTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000005 /* LogSecurityTest.swift */; };
 		B1000001000000000000006 /* UpdateTOCTOURaceTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000006 /* UpdateTOCTOURaceTest.swift */; };
+		B1000001000000000000007 /* FFIStructAlignmentTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000007 /* FFIStructAlignmentTest.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,6 +67,7 @@
 		B1000002000000000000004 /* TextModifyingKeysTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextModifyingKeysTest.swift; sourceTree = "<group>"; };
 		B1000002000000000000005 /* LogSecurityTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogSecurityTest.swift; sourceTree = "<group>"; };
 		B1000002000000000000006 /* UpdateTOCTOURaceTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateTOCTOURaceTest.swift; sourceTree = "<group>"; };
+		B1000002000000000000007 /* FFIStructAlignmentTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFIStructAlignmentTest.swift; sourceTree = "<group>"; };
 		B1000003000000000000002 /* GoNhanhTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GoNhanhTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -131,6 +133,7 @@
 				B1000002000000000000004 /* TextModifyingKeysTest.swift */,
 				B1000002000000000000005 /* LogSecurityTest.swift */,
 				B1000002000000000000006 /* UpdateTOCTOURaceTest.swift */,
+				B1000002000000000000007 /* FFIStructAlignmentTest.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -261,6 +264,7 @@
 				B1000001000000000000004 /* TextModifyingKeysTest.swift in Sources */,
 				B1000001000000000000005 /* LogSecurityTest.swift in Sources */,
 				B1000001000000000000006 /* UpdateTOCTOURaceTest.swift in Sources */,
+				B1000001000000000000007 /* FFIStructAlignmentTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
