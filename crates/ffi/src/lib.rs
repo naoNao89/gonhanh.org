@@ -945,7 +945,10 @@ mod tests {
         let count_offset = &r.count as *const _ as usize - base;
         let flags_offset = &r.flags as *const _ as usize - base;
 
-        assert_eq!(action_offset, 1024, "action must be at offset 1024 (after chars[256])");
+        assert_eq!(
+            action_offset, 1024,
+            "action must be at offset 1024 (after chars[256])"
+        );
         assert_eq!(backspace_offset, 1025, "backspace must be at offset 1025");
         assert_eq!(count_offset, 1026, "count must be at offset 1026");
         assert_eq!(flags_offset, 1027, "flags must be at offset 1027");
@@ -1005,15 +1008,16 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../../platforms/linux/src/RustBridge.h"
         );
-        let source = std::fs::read_to_string(h_path).unwrap_or_else(|e| {
-            panic!("Cannot read RustBridge.h: {}", e)
-        });
+        let source = std::fs::read_to_string(h_path)
+            .unwrap_or_else(|e| panic!("Cannot read RustBridge.h: {}", e));
 
         let rust_size = std::mem::size_of::<Result>();
         let expected_assert = format!("== {}", rust_size);
 
         let has_correct_assert = source.lines().any(|line| {
-            line.contains("static_assert") && line.contains("sizeof(ImeResult)") && line.contains(&expected_assert)
+            line.contains("static_assert")
+                && line.contains("sizeof(ImeResult)")
+                && line.contains(&expected_assert)
         });
 
         assert!(
@@ -1032,9 +1036,8 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../../platforms/linux/src/RustBridge.h"
         );
-        let source = std::fs::read_to_string(h_path).unwrap_or_else(|e| {
-            panic!("Cannot read RustBridge.h: {}", e)
-        });
+        let source = std::fs::read_to_string(h_path)
+            .unwrap_or_else(|e| panic!("Cannot read RustBridge.h: {}", e));
 
         // Extract the ImeResult struct body
         let struct_section: String = source
@@ -1065,9 +1068,8 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../../platforms/linux/src/RustBridge.cpp"
         );
-        let source = std::fs::read_to_string(cpp_path).unwrap_or_else(|e| {
-            panic!("Cannot read RustBridge.cpp: {}", e)
-        });
+        let source = std::fs::read_to_string(cpp_path)
+            .unwrap_or_else(|e| panic!("Cannot read RustBridge.cpp: {}", e));
 
         // Check that the old hardcoded "i < 32" pattern does not exist
         let has_hardcoded_32 = source.lines().any(|line| {
