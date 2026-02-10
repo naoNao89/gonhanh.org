@@ -905,4 +905,184 @@ mod tests {
         ime_clear_shortcuts();
         ime_clear();
     }
+
+    /// The Rust Result struct uses `chars: [u32; MAX]` where MAX=256,
+    /// giving a total size of 256*4 + 4 = 1028 bytes.
+    /// All platform FFI structs must match this exactly.
+    /// If this test fails, MAX changed and all platform bridges need updating.
+    #[test]
+    fn test_result_struct_size_is_1028_bytes() {
+        let size = std::mem::size_of::<Result>();
+        assert_eq!(
+            size, 1028,
+            "Result struct size changed from expected 1028 bytes to {} bytes. \
+             All platform FFI structs (Linux RustBridge.h, macOS RustBridge.swift, \
+             Windows RustBridge.cs) MUST be updated to match.",
+            size
+        );
+    }
+
+    /// Verify Result struct field offsets match the expected C ABI layout.
+    /// The chars array must be at offset 0, followed by action/backspace/count/flags
+    /// with no implicit padding.
+    #[test]
+    fn test_result_struct_field_offsets() {
+        use std::mem;
+
+        // chars[u32; 256] = 1024 bytes at offset 0
+        let expected_chars_size = 256 * mem::size_of::<u32>();
+        assert_eq!(expected_chars_size, 1024);
+
+        // After chars: action(1) + backspace(1) + count(1) + flags(1) = 4 bytes
+        // Total: 1024 + 4 = 1028
+        assert_eq!(mem::size_of::<Result>(), 1028);
+
+        // Verify field alignment by creating a result and checking field positions
+        let r = Result::none();
+        let base = &r as *const _ as usize;
+        let action_offset = &r.action as *const _ as usize - base;
+        let backspace_offset = &r.backspace as *const _ as usize - base;
+        let count_offset = &r.count as *const _ as usize - base;
+        let flags_offset = &r.flags as *const _ as usize - base;
+
+        assert_eq!(
+            action_offset, 1024,
+            "action must be at offset 1024 (after chars[256])"
+        );
+        assert_eq!(backspace_offset, 1025, "backspace must be at offset 1025");
+        assert_eq!(count_offset, 1026, "count must be at offset 1026");
+        assert_eq!(flags_offset, 1027, "flags must be at offset 1027");
+    }
+
+    /// Verify the MAX constant equals 256, the size of the Result chars array.
+    /// If MAX changes, all platform FFI bridge structs must be updated to match.
+    #[test]
+    fn test_max_constant_matches_result_chars_array() {
+        use engine::MAX;
+        assert_eq!(
+            MAX, 256,
+            "MAX changed from 256 to {}. Update ALL platform FFI structs: \
+             Linux RustBridge.h chars[{}], macOS RustBridge.swift, Windows RustBridge.cs",
+            MAX, MAX
+        );
+    }
+
+    /// Verify Linux RustBridge.h declares `uint32_t chars[MAX]` with the
+    /// correct array size matching the Rust engine MAX constant.
+    #[test]
+    fn test_linux_rustbridge_h_struct_size_matches_rust() {
+        let h_path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../platforms/linux/src/RustBridge.h"
+        );
+        let source = std::fs::read_to_string(h_path).unwrap_or_else(|e| {
+            panic!(
+                "Cannot read RustBridge.h at {}: {}. \
+                 This test must run from the repo root.",
+                h_path, e
+            )
+        });
+
+        // Find "uint32_t chars[N]" and extract N using string parsing
+        let expected_decl = format!("chars[{}]", engine::MAX);
+        let has_correct_size = source.lines().any(|line| {
+            let trimmed = line.trim();
+            trimmed.contains("uint32_t") && trimmed.contains(&expected_decl)
+        });
+
+        assert!(
+            has_correct_size,
+            "CRITICAL: Linux RustBridge.h does not declare 'uint32_t chars[{}]'. \
+             This causes struct field offset corruption — action/backspace/count \
+             are read from wrong memory positions. Fix: chars[{}]",
+            engine::MAX,
+            engine::MAX
+        );
+    }
+
+    /// Verify Linux RustBridge.h `static_assert` checks `sizeof(ImeResult)`
+    /// against the actual Rust Result struct size.
+    #[test]
+    fn test_linux_rustbridge_h_static_assert_matches_rust() {
+        let h_path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../platforms/linux/src/RustBridge.h"
+        );
+        let source = std::fs::read_to_string(h_path)
+            .unwrap_or_else(|e| panic!("Cannot read RustBridge.h: {}", e));
+
+        let rust_size = std::mem::size_of::<Result>();
+        let expected_assert = format!("== {}", rust_size);
+
+        let has_correct_assert = source.lines().any(|line| {
+            line.contains("static_assert")
+                && line.contains("sizeof(ImeResult)")
+                && line.contains(&expected_assert)
+        });
+
+        assert!(
+            has_correct_assert,
+            "CRITICAL: RustBridge.h static_assert does not assert sizeof(ImeResult) == {}. \
+             The Rust Result struct is {} bytes. Update the static_assert.",
+            rust_size, rust_size
+        );
+    }
+
+    /// Verify Linux RustBridge.h ImeResult has a `flags` field (not `_pad`)
+    /// matching the Rust Result struct's `flags: u8` field.
+    #[test]
+    fn test_linux_rustbridge_h_has_flags_field() {
+        let h_path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../platforms/linux/src/RustBridge.h"
+        );
+        let source = std::fs::read_to_string(h_path)
+            .unwrap_or_else(|e| panic!("Cannot read RustBridge.h: {}", e));
+
+        // Extract the ImeResult struct body
+        let struct_section: String = source
+            .lines()
+            .skip_while(|l| !l.contains("struct ImeResult"))
+            .take_while(|l| !l.contains("};"))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(
+            !struct_section.contains("_pad"),
+            "CRITICAL: RustBridge.h ImeResult still uses '_pad' instead of 'flags'. \
+             The Rust struct has 'flags: u8' with FLAG_KEY_CONSUMED bit. \
+             Rename '_pad' to 'flags' to enable shortcut key_consumed support on Linux."
+        );
+
+        assert!(
+            struct_section.contains("flags"),
+            "RustBridge.h ImeResult must have a 'flags' field matching Rust struct"
+        );
+    }
+
+    /// Verify RustBridge.cpp loop cap matches MAX to prevent truncation
+    /// of output characters.
+    #[test]
+    fn test_linux_rustbridge_cpp_loop_cap_matches_max() {
+        let cpp_path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../platforms/linux/src/RustBridge.cpp"
+        );
+        let source = std::fs::read_to_string(cpp_path)
+            .unwrap_or_else(|e| panic!("Cannot read RustBridge.cpp: {}", e));
+
+        // Check that the old hardcoded "i < 32" pattern does not exist
+        let has_hardcoded_32 = source.lines().any(|line| {
+            let trimmed = line.trim();
+            // Match lines like "for (...; i < 32; ...)" in the chars loop
+            trimmed.contains("i < 32") && !trimmed.starts_with("//")
+        });
+
+        assert!(
+            !has_hardcoded_32,
+            "CRITICAL: RustBridge.cpp still has hardcoded loop cap 'i < 32'. \
+             Must be 'i < {}' to match Rust MAX.",
+            engine::MAX
+        );
+    }
 }
