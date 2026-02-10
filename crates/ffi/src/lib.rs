@@ -471,6 +471,19 @@ mod tests {
     use data::keys;
     use engine::FLAG_KEY_CONSUMED;
     use serial_test::serial;
+
+    /// Safely convert a non-null `*mut Result` (from `Box::into_raw`) back
+    /// into an owned `Box<Result>`.  The caller can inspect the value and
+    /// the `Box` is freed on drop — no manual `ime_free` needed.
+    ///
+    /// # Panics
+    /// Panics (test failure) if the pointer is null.
+    fn into_box(ptr: *mut Result) -> Box<Result> {
+        assert!(!ptr.is_null(), "FFI returned null pointer");
+        // SAFETY: pointer was produced by `Box::into_raw` in `ime_key` /
+        // `ime_key_with_char` and has not been freed yet.
+        unsafe { Box::from_raw(ptr) }
+    }
     use std::ffi::CString;
 
     #[test]
@@ -480,16 +493,12 @@ mod tests {
         ime_method(0); // Telex
 
         // Type 'a' + 's' -> á
-        let r1 = ime_key(keys::A, false, false);
-        assert!(!r1.is_null());
-        unsafe { ime_free(r1) };
+        let r1 = into_box(ime_key(keys::A, false, false));
+        drop(r1);
 
-        let r2 = ime_key(keys::S, false, false);
-        assert!(!r2.is_null());
-        unsafe {
-            assert_eq!((*r2).chars[0], 'á' as u32);
-            ime_free(r2);
-        }
+        let r2 = into_box(ime_key(keys::S, false, false));
+        assert_eq!(r2.chars[0], 'á' as u32);
+        drop(r2);
 
         ime_clear();
     }
@@ -583,9 +592,7 @@ mod tests {
         }
 
         // Engine should still work
-        let r = ime_key(keys::A, false, false);
-        assert!(!r.is_null());
-        unsafe { ime_free(r) };
+        drop(into_box(ime_key(keys::A, false, false)));
 
         ime_clear();
     }
@@ -712,26 +719,23 @@ mod tests {
         drop(guard);
 
         // Type "f1" + space and verify shortcut triggers
-        let _ = ime_key(keys::F, false, false);
-        let _ = ime_key(keys::N1, false, false);
-        let r = ime_key(keys::SPACE, false, false);
-
-        assert!(!r.is_null());
-        let result = unsafe { &*r };
+        drop(into_box(ime_key(keys::F, false, false)));
+        drop(into_box(ime_key(keys::N1, false, false)));
+        let r = into_box(ime_key(keys::SPACE, false, false));
         assert_eq!(
-            result.action,
+            r.action,
             engine::Action::Send as u8,
             "Shortcut should trigger"
         );
-        assert_eq!(result.backspace, 2, "Should backspace 2 chars (f1)");
+        assert_eq!(r.backspace, 2, "Should backspace 2 chars (f1)");
 
         // Verify output
-        let output: String = (0..result.count as usize)
-            .filter_map(|i| char::from_u32(result.chars[i]))
+        let output: String = (0..r.count as usize)
+            .filter_map(|i| char::from_u32(r.chars[i]))
             .collect();
         assert_eq!(output, "formula one ", "Should output replacement + space");
 
-        unsafe { ime_free(r) };
+        drop(r);
         ime_clear_shortcuts();
         ime_clear();
     }
@@ -750,14 +754,11 @@ mod tests {
 
         // Type 's' to add sắc mark - should change ệ to ế
         // Engine returns replacement for changed portion
-        let r = ime_key(keys::S, false, false);
-        assert!(!r.is_null());
-        unsafe {
-            assert_eq!((*r).action, 1, "Should send replacement");
-            // Engine outputs the modified result
-            assert!((*r).count > 0, "Should have output chars");
-            ime_free(r);
-        }
+        let r = into_box(ime_key(keys::S, false, false));
+        assert_eq!(r.action, 1, "Should send replacement");
+        // Engine outputs the modified result
+        assert!(r.count > 0, "Should have output chars");
+        drop(r);
 
         ime_clear();
     }
@@ -773,9 +774,7 @@ mod tests {
         }
 
         // Engine should still work
-        let r = ime_key(keys::A, false, false);
-        assert!(!r.is_null());
-        unsafe { ime_free(r) };
+        drop(into_box(ime_key(keys::A, false, false)));
 
         ime_clear();
     }
@@ -812,36 +811,32 @@ mod tests {
 
         // Simulate typing √ (Option+V) twice using ime_key_with_char
         // First √ - should accumulate in shortcut_prefix
-        let r1 = ime_key_with_char(keys::V, false, false, false, '√' as u32);
-        assert!(!r1.is_null());
-        let result1 = unsafe { &*r1 };
-        assert_eq!(result1.action, 0, "First √ should not trigger yet");
-        unsafe { ime_free(r1) };
+        let r1 = into_box(ime_key_with_char(keys::V, false, false, false, '√' as u32));
+        assert_eq!(r1.action, 0, "First √ should not trigger yet");
+        drop(r1);
 
         // Second √ - should match and trigger shortcut
-        let r2 = ime_key_with_char(keys::V, false, false, false, '√' as u32);
-        assert!(!r2.is_null());
-        let result2 = unsafe { &*r2 };
+        let r2 = into_box(ime_key_with_char(keys::V, false, false, false, '√' as u32));
         assert_eq!(
-            result2.action,
+            r2.action,
             engine::Action::Send as u8,
             "Second √ should trigger shortcut"
         );
-        assert_eq!(result2.backspace, 1, "Should backspace 1 char (first √)");
+        assert_eq!(r2.backspace, 1, "Should backspace 1 char (first √)");
 
         // Verify output is ✅
-        let output: String = (0..result2.count as usize)
-            .filter_map(|i| char::from_u32(result2.chars[i]))
+        let output: String = (0..r2.count as usize)
+            .filter_map(|i| char::from_u32(r2.chars[i]))
             .collect();
         assert_eq!(output, "✅", "Should output ✅");
 
         // Verify key_consumed flag is set
         assert!(
-            (result2.flags & FLAG_KEY_CONSUMED) != 0,
+            (r2.flags & FLAG_KEY_CONSUMED) != 0,
             "Key should be consumed"
         );
 
-        unsafe { ime_free(r2) };
+        drop(r2);
         ime_clear_shortcuts();
         ime_clear();
     }
@@ -864,44 +859,36 @@ mod tests {
         }
 
         // Type ≈ (Option+X) - should pass through
-        let r1 = ime_key_with_char(keys::X, false, false, false, '≈' as u32);
-        assert!(!r1.is_null());
-        let result1 = unsafe { &*r1 };
-        assert_eq!(result1.action, 0, "≈ should not trigger anything");
-        unsafe { ime_free(r1) };
+        let r1 = into_box(ime_key_with_char(keys::X, false, false, false, '≈' as u32));
+        assert_eq!(r1.action, 0, "≈ should not trigger anything");
+        drop(r1);
 
         // Type ç (Option+C) - should pass through
-        let r2 = ime_key_with_char(keys::C, false, false, false, 'ç' as u32);
-        assert!(!r2.is_null());
-        let result2 = unsafe { &*r2 };
-        assert_eq!(result2.action, 0, "ç should not trigger anything");
-        unsafe { ime_free(r2) };
+        let r2 = into_box(ime_key_with_char(keys::C, false, false, false, 'ç' as u32));
+        assert_eq!(r2.action, 0, "ç should not trigger anything");
+        drop(r2);
 
         // Type √ (Option+V) - first √, should accumulate
-        let r3 = ime_key_with_char(keys::V, false, false, false, '√' as u32);
-        assert!(!r3.is_null());
-        let result3 = unsafe { &*r3 };
-        assert_eq!(result3.action, 0, "First √ should not trigger yet");
-        unsafe { ime_free(r3) };
+        let r3 = into_box(ime_key_with_char(keys::V, false, false, false, '√' as u32));
+        assert_eq!(r3.action, 0, "First √ should not trigger yet");
+        drop(r3);
 
         // Type √ (Option+V) - second √, should trigger √√ → ✅
-        let r4 = ime_key_with_char(keys::V, false, false, false, '√' as u32);
-        assert!(!r4.is_null());
-        let result4 = unsafe { &*r4 };
+        let r4 = into_box(ime_key_with_char(keys::V, false, false, false, '√' as u32));
         assert_eq!(
-            result4.action,
+            r4.action,
             engine::Action::Send as u8,
             "Second √ should trigger shortcut (suffix match)"
         );
-        assert_eq!(result4.backspace, 1, "Should backspace 1 char (first √)");
+        assert_eq!(r4.backspace, 1, "Should backspace 1 char (first √)");
 
         // Verify output is ✅
-        let output: String = (0..result4.count as usize)
-            .filter_map(|i| char::from_u32(result4.chars[i]))
+        let output: String = (0..r4.count as usize)
+            .filter_map(|i| char::from_u32(r4.chars[i]))
             .collect();
         assert_eq!(output, "✅", "Should output ✅");
 
-        unsafe { ime_free(r4) };
+        drop(r4);
         ime_clear_shortcuts();
         ime_clear();
     }
