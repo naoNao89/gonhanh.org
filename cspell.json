@@ -1,0 +1,40 @@
+// Root cspell config — used by CLI (pre-commit + CI)
+{
+  "version": "0.2",
+  "language": "en,vi",
+  "dictionaries": ["acronyms+names", "jargon", "shell", "workspace"],
+  "dictionaryDefinitions": [
+    { "name": "acronyms+names", "path": ".cspell/acronyms+names.wordlist.txt" },
+    { "name": "jargon", "path": ".cspell/jargon.wordlist.txt" },
+    { "name": "shell", "path": ".cspell/shell.wordlist.txt" },
+    { "name": "workspace", "path": ".cspell/workspace.wordlist.txt" }
+  ],
+  "ignorePaths": [
+    ".git/**",
+    "Cargo.lock",
+    "oranda.json",
+    "target/**",
+    "pool/**",
+    "platforms/macos/Assets.xcassets/**",
+    "platforms/macos/GoNhanh.xcodeproj/**",
+    "platforms/macos/dmg-resources/**",
+    "node_modules/**",
+    "dist/**",
+    "coverage/**",
+    "tests/**/fixtures/**",
+    "**/*.svg",
+    "**/*.png",
+    "**/*.tiff",
+    "**/*.lcov.info",
+    ".devcontainer/**",
+    ".cspell/**",
+    "**/dictionaries/**",
+    "crates/data/src/*_dict*.rs",
+    "crates/data/src/english_dict_merged.txt",
+    "crates/data/src/telex_doubles.rs",
+    "**/tests/data/*.txt"
+  ],
+  "enableGlobDot": true,
+  "ignoreWords": [],
+  "words": []
+}

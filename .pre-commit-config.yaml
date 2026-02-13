@@ -8,7 +8,7 @@ repos:
       - id: check-added-large-files
       - id: check-executables-have-shebangs
       - id: check-json
-        exclude: '.vscode/cSpell\.json' # cSpell.json uses comments
+        exclude: '(^cspell\.json$|\.vscode/cSpell\.json$)' # cspell configs use JSONC (comments)
       - id: check-shebang-scripts-are-executable
         exclude: '.+\.rs' # would be triggered by #![some_attribute]
       - id: check-symlinks
@@ -47,6 +47,6 @@ repos:
       - id: cspell
         name: Code spell checker (cspell)
         description: Run cspell to check for spelling errors (if available).
-        entry: bash -c 'if command -v cspell >/dev/null 2>&1; then cspell --no-must-find-files -- "$@"; else echo "cspell not found, skipping spell check"; exit 0; fi' --
+        entry: bash -c 'if command -v cspell >/dev/null 2>&1; then cspell --config cspell.json --no-must-find-files -- "$@"; else echo "cspell not found, skipping spell check"; exit 0; fi' --
         pass_filenames: true
         language: system
