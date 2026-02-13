@@ -1,3 +1,24 @@
+# GitHub Actions / CI
+clippy
+dtolnay
+Swatinem
+RUSTDOCFLAGS
+RUSTFLAGS
+Dwarnings
+taiki
+nextest
+pipefail
+gnueabihf
+DCMAKE
+DBUILD
+
+# Build artifacts
+libgonhanh
+libfcitx
+libxkbcommon
+libgtest
+keycodemap
+
 # acronyms
 API
 APIs
