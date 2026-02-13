@@ -1,0 +1,24 @@
+# vietnamese marks and syllables (for test data)
+huyen
+nang
+HUYEN
+NANG
+TRIPHTHONGS
+
+# project specific constants
+telex
+vni
+DAUCU
+DAUMOI
+
+# test data patterns (vietnamese typing)
+aaas
+nesu
+aaas
+
+# crate names
+gonhanh
+ffi
+
+# translation strings
+CLICOLOR

@@ -33,6 +33,19 @@ jobs:
         with:
           manifest-path: Cargo.toml
 
+  style_spelling:
+    name: Style/cspell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: streetsidesoftware/cspell-action@v6
+        with:
+          config: cspell.json
+          files: '**'
+          strict: true
+
   style_format:
     name: Style/format
     runs-on: ubuntu-latest
